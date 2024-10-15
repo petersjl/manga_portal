@@ -1,4 +1,7 @@
 import 'package:flutter/material.dart';
+import 'pages/library_page.dart';
+import 'pages/search_page.dart';
+import 'pages/settings_page.dart';
 
 void main() {
   runApp(const MangaPortal());
@@ -19,7 +22,8 @@ class MangaPortal extends StatelessWidget {
       ),
       darkTheme: ThemeData(
         brightness: Brightness.dark,
-        colorScheme: ColorScheme.fromSeed(seedColor: Colors.lightBlue, brightness: Brightness.dark),
+        colorScheme: ColorScheme.fromSeed(
+            seedColor: Colors.lightBlue, brightness: Brightness.dark),
         useMaterial3: true,
       ),
       home: const HomePage(),
@@ -35,35 +39,62 @@ class HomePage extends StatefulWidget {
 }
 
 class _HomePageState extends State<HomePage> {
-  int _counter = 0;
-
-  void _incrementCounter() {
-    setState(() {
-      _counter++;
-    });
-  }
+  int _selectedIndex = 0;
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      body: Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: <Widget>[
-            const Text(
-              'You have pushed the button this many times:',
-            ),
-            Text(
-              '$_counter',
-              style: Theme.of(context).textTheme.headlineMedium,
-            ),
-          ],
-        ),
+    var colorScheme = Theme.of(context).colorScheme;
+
+    Widget page;
+    switch (_selectedIndex) {
+      case 0:
+        page = const LibraryPage();
+        break;
+      case 1:
+        page = const SearchPage();
+        break;
+      case 2:
+        page = const SettingsPage();
+        break;
+      default:
+        throw UnimplementedError('no widget for $_selectedIndex');
+    }
+
+    var mainArea = ColoredBox(
+      color: colorScheme.surfaceContainer,
+      child: AnimatedSwitcher(
+        duration: const Duration(microseconds: 1000),
+        child: page,
       ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: _incrementCounter,
-        tooltip: 'Increment',
-        child: const Icon(Icons.add),
+    );
+
+    return SafeArea(
+      child: Column(
+        children: [
+          Expanded(child: mainArea),
+          NavigationBar(
+            onDestinationSelected: (index) {
+              setState(() {
+                _selectedIndex = index;
+              });
+            },
+            selectedIndex: _selectedIndex,
+            destinations: const [
+              NavigationDestination(
+                icon: Icon(Icons.menu_book),
+                label: "Library",
+              ),
+              NavigationDestination(
+                icon: Icon(Icons.search),
+                label: "Search",
+              ),
+              NavigationDestination(
+                icon: Icon(Icons.settings),
+                label: "Settings",
+              ),
+            ],
+          ),
+        ],
       ),
     );
   }
