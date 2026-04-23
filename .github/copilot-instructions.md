@@ -239,6 +239,58 @@ After all tasks and tests for a feature are done, always follow this sequence be
 
 ---
 
+## Workflow Evolution
+
+**Whenever a change to the development workflow is agreed upon and confirmed to work, update `.github/copilot-instructions.md` immediately** so the change persists for future agents. Do not leave workflow improvements as session-only knowledge.
+
+---
+
+## Live App Testing (Flutter Driver)
+
+To verify features by interacting with the running app, use the Flutter MCP tools. The app must be launched with the driver entrypoint (`lib/driver_main.dart`), which enables the Flutter Driver extension.
+
+### Setup (already done — only repeat if files are missing)
+
+- `flutter_driver` is a dev dependency in `pubspec.yaml` (under `flutter_driver: sdk: flutter`)
+- `lib/driver_main.dart` exists and calls `enableFlutterDriverExtension()` before `app.main()`
+
+### Launch sequence
+
+```
+1. Get device ID:
+   flutter devices --machine  →  use the emulator-XXXX id
+
+2. Launch with driver entrypoint using mcp_dart_sdk_mcp__launch_app:
+   root: /path/to/manga_portal
+   device: emulator-XXXX
+   target: lib/driver_main.dart
+   → returns { dtdUri, pid }
+
+3. Connect DTD using mcp_dart_sdk_mcp__dtd:
+   command: connect
+   uri: <dtdUri from step 2>
+
+4. Now all driver commands are available.
+```
+
+### Available driver commands
+
+- **Screenshot**: `mcp_dart_sdk_mcp__flutter_driver_command` with `command: screenshot`
+- **Tap**: `command: tap`, `finderType: ByText` (or `ByType`, `ByValueKey`, etc.), `text: "Label"`
+- **Enter text**: `command: enter_text`, `text: "..."`
+- **Scroll**: `command: scroll` with `dx`, `dy`, `duration`, `frequency`
+- **Wait for widget**: `command: waitFor`, `finderType: ByType`, `type: "WidgetClassName"`
+- **Widget tree**: `mcp_dart_sdk_mcp__widget_inspector` with `command: get_widget_tree` — use this to discover available widget types and text labels before tapping
+- **Runtime errors**: `mcp_dart_sdk_mcp__get_runtime_errors`
+- **Hot reload**: `mcp_dart_sdk_mcp__hot_reload`
+- **Stop app**: `mcp_dart_sdk_mcp__stop_app` with `pid`
+
+### Workflow guideline
+
+After implementing a feature, launch the app via the driver entrypoint, take a screenshot to confirm the initial state, interact with the new UI, and verify the result with another screenshot — before asking the user for manual testing feedback.
+
+---
+
 ## Testing Conventions
 
 ### Widget tests (`test/widget/`)
