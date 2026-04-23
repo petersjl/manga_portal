@@ -226,6 +226,19 @@ When the user swipes or scrolls past the last page of a chapter, show a **chapte
 
 ---
 
+## Feature Completion Workflow
+
+After all tasks and tests for a feature are done, always follow this sequence before moving on:
+
+1. **Announce completion** — State that the feature is implemented and all tests pass. Invite the user to manually test the app on a device or emulator and share any feedback.
+2. **Iterate on feedback** — If the user reports issues or requests adjustments, implement them, re-run tests, and ask for feedback again. Repeat until the user is satisfied.
+3. **Update documentation** — Once the user confirms the feature is complete:
+   - In `docs/ROADMAP.md`, mark all tasks for the completed feature with `[x]` and add `✅` to the feature heading.
+   - Mark the next feature heading with `🚧 (In Progress)`.
+4. **Do not start the next feature** until the user explicitly gives the go-ahead after step 2.
+
+---
+
 ## Testing Conventions
 
 ### Widget tests (`test/widget/`)
