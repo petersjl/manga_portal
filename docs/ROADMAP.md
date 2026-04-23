@@ -4,13 +4,13 @@ Features are implemented one at a time in order. Each feature ships with accompa
 
 ---
 
-## Feature 0 — Project Infrastructure ✅ (In Progress)
+## Feature 0 — Project Infrastructure ✅
 
 **Goal**: Establish the foundation every subsequent feature builds on.
 
 ### Tasks
 
-- [ ] Add packages to `pubspec.yaml`:
+- [x] Add packages to `pubspec.yaml`:
   - `flutter_riverpod`, `riverpod_annotation` — state management
   - `go_router` — navigation
   - `dio` — HTTP client
@@ -18,17 +18,17 @@ Features are implemented one at a time in order. Each feature ships with accompa
   - `shared_preferences` — local progress + library + settings storage
   - `flutter_secure_storage` — auth token storage (used in Feature 8)
   - `build_runner`, `riverpod_generator` — code generation (dev)
-- [ ] Run `flutter pub get`
-- [ ] Create `lib/app.dart`:
+- [x] Run `flutter pub get`
+- [x] Create `lib/app.dart`:
   - Define all named `GoRouter` routes
   - Wrap with `ProviderScope`
   - `ShellRoute` for the 3 bottom-nav tabs
-- [ ] Update `lib/main.dart`:
+- [x] Update `lib/main.dart`:
   - Replace `MaterialApp` with `MaterialApp.router` using the router from `app.dart`
   - Wrap root with `ProviderScope`
   - Apply dark-first Material 3 theme (dark as `themeMode` default, both `theme` and `darkTheme` defined)
   - Fix `AnimatedSwitcher` duration bug: `microseconds: 1000` → `milliseconds: 300`
-- [ ] Replace `test/widget_test.dart` default counter test with a smoke test that verifies `MangaPortal` renders without throwing
+- [x] Replace `test/widget_test.dart` default counter test with a smoke test that verifies `MangaPortal` renders without throwing
 
 ### Tests
 
@@ -36,7 +36,7 @@ Features are implemented one at a time in order. Each feature ships with accompa
 
 ---
 
-## Feature 1 — Steel Thread: Hardcoded Reader
+## Feature 1 — Steel Thread: Hardcoded Reader 🚧 (In Progress)
 
 **Goal**: Navigate from the app to a working chapter reader using a hardcoded manga and chapter ID. Proves the full image-fetching pipeline works end-to-end before building any discovery features.
 
