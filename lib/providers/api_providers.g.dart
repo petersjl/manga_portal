@@ -7,7 +7,7 @@ part of 'api_providers.dart';
 // **************************************************************************
 
 String _$mangaDexApiServiceHash() =>
-    r'da9ec2c66b0280d7f0a904cf3d58af027add927d';
+    r'6a46ffbab2dc10e14270fb96cc8d5f83076d5063';
 
 /// See also [mangaDexApiService].
 @ProviderFor(mangaDexApiService)
@@ -175,6 +175,284 @@ class _AtHomeServerProviderElement
 
   @override
   String get chapterId => (origin as AtHomeServerProvider).chapterId;
+}
+
+String _$mangaHash() => r'954071186760d74354c4d82bb5bec7f79d5ad721';
+
+/// See also [manga].
+@ProviderFor(manga)
+const mangaProvider = MangaFamily();
+
+/// See also [manga].
+class MangaFamily extends Family<AsyncValue<Manga>> {
+  /// See also [manga].
+  const MangaFamily();
+
+  /// See also [manga].
+  MangaProvider call(
+    String mangaId,
+  ) {
+    return MangaProvider(
+      mangaId,
+    );
+  }
+
+  @override
+  MangaProvider getProviderOverride(
+    covariant MangaProvider provider,
+  ) {
+    return call(
+      provider.mangaId,
+    );
+  }
+
+  static const Iterable<ProviderOrFamily>? _dependencies = null;
+
+  @override
+  Iterable<ProviderOrFamily>? get dependencies => _dependencies;
+
+  static const Iterable<ProviderOrFamily>? _allTransitiveDependencies = null;
+
+  @override
+  Iterable<ProviderOrFamily>? get allTransitiveDependencies =>
+      _allTransitiveDependencies;
+
+  @override
+  String? get name => r'mangaProvider';
+}
+
+/// See also [manga].
+class MangaProvider extends AutoDisposeFutureProvider<Manga> {
+  /// See also [manga].
+  MangaProvider(
+    String mangaId,
+  ) : this._internal(
+          (ref) => manga(
+            ref as MangaRef,
+            mangaId,
+          ),
+          from: mangaProvider,
+          name: r'mangaProvider',
+          debugGetCreateSourceHash:
+              const bool.fromEnvironment('dart.vm.product')
+                  ? null
+                  : _$mangaHash,
+          dependencies: MangaFamily._dependencies,
+          allTransitiveDependencies: MangaFamily._allTransitiveDependencies,
+          mangaId: mangaId,
+        );
+
+  MangaProvider._internal(
+    super._createNotifier, {
+    required super.name,
+    required super.dependencies,
+    required super.allTransitiveDependencies,
+    required super.debugGetCreateSourceHash,
+    required super.from,
+    required this.mangaId,
+  }) : super.internal();
+
+  final String mangaId;
+
+  @override
+  Override overrideWith(
+    FutureOr<Manga> Function(MangaRef provider) create,
+  ) {
+    return ProviderOverride(
+      origin: this,
+      override: MangaProvider._internal(
+        (ref) => create(ref as MangaRef),
+        from: from,
+        name: null,
+        dependencies: null,
+        allTransitiveDependencies: null,
+        debugGetCreateSourceHash: null,
+        mangaId: mangaId,
+      ),
+    );
+  }
+
+  @override
+  AutoDisposeFutureProviderElement<Manga> createElement() {
+    return _MangaProviderElement(this);
+  }
+
+  @override
+  bool operator ==(Object other) {
+    return other is MangaProvider && other.mangaId == mangaId;
+  }
+
+  @override
+  int get hashCode {
+    var hash = _SystemHash.combine(0, runtimeType.hashCode);
+    hash = _SystemHash.combine(hash, mangaId.hashCode);
+
+    return _SystemHash.finish(hash);
+  }
+}
+
+@Deprecated('Will be removed in 3.0. Use Ref instead')
+// ignore: unused_element
+mixin MangaRef on AutoDisposeFutureProviderRef<Manga> {
+  /// The parameter `mangaId` of this provider.
+  String get mangaId;
+}
+
+class _MangaProviderElement extends AutoDisposeFutureProviderElement<Manga>
+    with MangaRef {
+  _MangaProviderElement(super.provider);
+
+  @override
+  String get mangaId => (origin as MangaProvider).mangaId;
+}
+
+String _$chapterFeedHash() => r'7e26a5eabb0073e19cccb33103c4c41cd17b2505';
+
+/// Fetches all chapters for [mangaId], paginating internally (max 500/request).
+/// Chapters are returned in API order (ascending by chapter number).
+///
+/// Copied from [chapterFeed].
+@ProviderFor(chapterFeed)
+const chapterFeedProvider = ChapterFeedFamily();
+
+/// Fetches all chapters for [mangaId], paginating internally (max 500/request).
+/// Chapters are returned in API order (ascending by chapter number).
+///
+/// Copied from [chapterFeed].
+class ChapterFeedFamily extends Family<AsyncValue<List<Chapter>>> {
+  /// Fetches all chapters for [mangaId], paginating internally (max 500/request).
+  /// Chapters are returned in API order (ascending by chapter number).
+  ///
+  /// Copied from [chapterFeed].
+  const ChapterFeedFamily();
+
+  /// Fetches all chapters for [mangaId], paginating internally (max 500/request).
+  /// Chapters are returned in API order (ascending by chapter number).
+  ///
+  /// Copied from [chapterFeed].
+  ChapterFeedProvider call(
+    String mangaId,
+  ) {
+    return ChapterFeedProvider(
+      mangaId,
+    );
+  }
+
+  @override
+  ChapterFeedProvider getProviderOverride(
+    covariant ChapterFeedProvider provider,
+  ) {
+    return call(
+      provider.mangaId,
+    );
+  }
+
+  static const Iterable<ProviderOrFamily>? _dependencies = null;
+
+  @override
+  Iterable<ProviderOrFamily>? get dependencies => _dependencies;
+
+  static const Iterable<ProviderOrFamily>? _allTransitiveDependencies = null;
+
+  @override
+  Iterable<ProviderOrFamily>? get allTransitiveDependencies =>
+      _allTransitiveDependencies;
+
+  @override
+  String? get name => r'chapterFeedProvider';
+}
+
+/// Fetches all chapters for [mangaId], paginating internally (max 500/request).
+/// Chapters are returned in API order (ascending by chapter number).
+///
+/// Copied from [chapterFeed].
+class ChapterFeedProvider extends AutoDisposeFutureProvider<List<Chapter>> {
+  /// Fetches all chapters for [mangaId], paginating internally (max 500/request).
+  /// Chapters are returned in API order (ascending by chapter number).
+  ///
+  /// Copied from [chapterFeed].
+  ChapterFeedProvider(
+    String mangaId,
+  ) : this._internal(
+          (ref) => chapterFeed(
+            ref as ChapterFeedRef,
+            mangaId,
+          ),
+          from: chapterFeedProvider,
+          name: r'chapterFeedProvider',
+          debugGetCreateSourceHash:
+              const bool.fromEnvironment('dart.vm.product')
+                  ? null
+                  : _$chapterFeedHash,
+          dependencies: ChapterFeedFamily._dependencies,
+          allTransitiveDependencies:
+              ChapterFeedFamily._allTransitiveDependencies,
+          mangaId: mangaId,
+        );
+
+  ChapterFeedProvider._internal(
+    super._createNotifier, {
+    required super.name,
+    required super.dependencies,
+    required super.allTransitiveDependencies,
+    required super.debugGetCreateSourceHash,
+    required super.from,
+    required this.mangaId,
+  }) : super.internal();
+
+  final String mangaId;
+
+  @override
+  Override overrideWith(
+    FutureOr<List<Chapter>> Function(ChapterFeedRef provider) create,
+  ) {
+    return ProviderOverride(
+      origin: this,
+      override: ChapterFeedProvider._internal(
+        (ref) => create(ref as ChapterFeedRef),
+        from: from,
+        name: null,
+        dependencies: null,
+        allTransitiveDependencies: null,
+        debugGetCreateSourceHash: null,
+        mangaId: mangaId,
+      ),
+    );
+  }
+
+  @override
+  AutoDisposeFutureProviderElement<List<Chapter>> createElement() {
+    return _ChapterFeedProviderElement(this);
+  }
+
+  @override
+  bool operator ==(Object other) {
+    return other is ChapterFeedProvider && other.mangaId == mangaId;
+  }
+
+  @override
+  int get hashCode {
+    var hash = _SystemHash.combine(0, runtimeType.hashCode);
+    hash = _SystemHash.combine(hash, mangaId.hashCode);
+
+    return _SystemHash.finish(hash);
+  }
+}
+
+@Deprecated('Will be removed in 3.0. Use Ref instead')
+// ignore: unused_element
+mixin ChapterFeedRef on AutoDisposeFutureProviderRef<List<Chapter>> {
+  /// The parameter `mangaId` of this provider.
+  String get mangaId;
+}
+
+class _ChapterFeedProviderElement
+    extends AutoDisposeFutureProviderElement<List<Chapter>>
+    with ChapterFeedRef {
+  _ChapterFeedProviderElement(super.provider);
+
+  @override
+  String get mangaId => (origin as ChapterFeedProvider).mangaId;
 }
 // ignore_for_file: type=lint
 // ignore_for_file: subtype_of_sealed_class, invalid_use_of_internal_member, invalid_use_of_visible_for_testing_member, deprecated_member_use_from_same_package

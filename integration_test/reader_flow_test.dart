@@ -15,18 +15,31 @@ import 'package:manga_portal/main.dart' as app;
 void main() {
   IntegrationTestWidgetsFlutterBinding.ensureInitialized();
 
-  testWidgets('Tapping "Open Reader (test)" navigates to ReaderPage',
+  testWidgets('Library stub navigates to MangaDetailPage then to ReaderPage',
       (tester) async {
     app.main();
     await tester.pumpAndSettle();
 
-    // Confirm we are on the Library tab.
-    expect(find.text('Open Reader (test)'), findsOneWidget);
+    // ── Library page ────────────────────────────────────────────────────────
+    expect(find.text('Open Manga Detail (test)'), findsOneWidget);
 
-    // Tap the button to open the reader.
-    await tester.tap(find.text('Open Reader (test)'));
+    // Navigate to manga detail page.
+    await tester.tap(find.text('Open Manga Detail (test)'));
     await tester.pumpAndSettle();
 
+    // ── Manga detail page ───────────────────────────────────────────────────
+    // The mock server returns a manga named "Mock Manga Title".
+    expect(find.text('Mock Manga Title'), findsAtLeastNWidgets(1));
+
+    // The mock server returns 2 chapters (Ch.2 is listed first, descending).
+    expect(find.text('Ch. 2'), findsOneWidget);
+    expect(find.text('Ch. 1'), findsOneWidget);
+
+    // Tap the first visible chapter (Ch.2 at top of descending list).
+    await tester.tap(find.text('Ch. 2'));
+    await tester.pumpAndSettle();
+
+    // ── Reader page ─────────────────────────────────────────────────────────
     // The mock server returns 2 pages, so the counter should show "1 / 2".
     expect(find.text('1 / 2'), findsOneWidget);
   });

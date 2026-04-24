@@ -1,6 +1,8 @@
 import 'package:dio/dio.dart';
 
+import '../models/chapter.dart';
 import '../models/chapter_pages.dart';
+import '../models/manga.dart';
 
 class MangaDexApiService {
   MangaDexApiService({String? baseUrl})
@@ -19,6 +21,35 @@ class MangaDexApiService {
       '/at-home/server/$chapterId',
     );
     return AtHomeServer.fromJson(response.data!);
+  }
+
+  Future<Manga> fetchManga(String mangaId) async {
+    final response = await _dio.get<Map<String, dynamic>>(
+      '/manga/$mangaId',
+      queryParameters: {'includes[]': 'cover_art'},
+    );
+    return Manga.fromJson(response.data!);
+  }
+
+  /// Fetches one page of the chapter feed (up to 500 chapters).
+  /// Pass [offset] for subsequent pages. The provider handles pagination.
+  Future<List<Chapter>> fetchChapterFeed(
+    String mangaId, {
+    int offset = 0,
+  }) async {
+    final response = await _dio.get<Map<String, dynamic>>(
+      '/manga/$mangaId/feed',
+      queryParameters: {
+        'includes[]': 'scanlation_group',
+        'order[chapter]': 'asc',
+        'limit': 500,
+        'offset': offset,
+      },
+    );
+    final data = response.data!;
+    return (data['data'] as List)
+        .map((e) => Chapter.fromJson(e as Map<String, dynamic>))
+        .toList();
   }
 
   /// Reports an image load outcome to the MangaDex@Home network.

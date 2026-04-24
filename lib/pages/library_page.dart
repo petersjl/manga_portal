@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
-// TODO(feature-2): Replace with real manga library grid.
-// Hardcoded chapter ID used for Feature 1 steel thread verification.
-// Chapter 28 of "Precious Family" (safe, EN, 21 pages) — fetched 2026-04-23.
-const _hardcodedChapterId = 'b72b1477-ba35-4115-afd7-09e83240048d';
+// TODO(feature-5): Replace with real manga library grid.
+// Hardcoded manga ID used for Feature 2 steel thread verification.
+// "Dungeon Meshi" (Delicious in Dungeon) — popular, safe, many chapters.
+const _hardcodedMangaId = 'a96676e5-8ae2-425e-b549-7f15dd34a6d8';
 
 class LibraryPage extends StatelessWidget {
   const LibraryPage({super.key});
@@ -21,9 +21,9 @@ class LibraryPage extends StatelessWidget {
           ),
           const SizedBox(height: 24),
           FilledButton.icon(
-            onPressed: () => context.push('/reader/$_hardcodedChapterId'),
+            onPressed: () => context.push('/manga/$_hardcodedMangaId'),
             icon: const Icon(Icons.menu_book),
-            label: const Text('Open Reader (test)'),
+            label: const Text('Open Manga Detail (test)'),
           ),
         ],
       ),

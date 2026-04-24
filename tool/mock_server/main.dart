@@ -84,11 +84,86 @@ Future<void> _handle(HttpRequest req, int port, String hostIp) async {
         'dataSaver': ['page1.jpg', 'page2.jpg'],
       },
     });
-    req.response
-      ..statusCode = HttpStatus.ok
-      ..headers
-          .set(HttpHeaders.contentTypeHeader, 'application/json; charset=utf-8')
-      ..write(body);
+    _writeJson(req.response, body);
+  } else if (path.startsWith('/manga/') && path.endsWith('/feed')) {
+    // Chapter feed — return two fake chapters in English.
+    final mangaId = path.split('/')[2];
+    final body = jsonEncode({
+      'result': 'ok',
+      'response': 'collection',
+      'data': [
+        {
+          'id': 'test-chapter-1',
+          'type': 'chapter',
+          'attributes': {
+            'volume': '1',
+            'chapter': '1',
+            'title': 'The First Chapter',
+            'translatedLanguage': 'en',
+            'publishAt': '2020-01-01T00:00:00+00:00',
+            'pages': 2,
+          },
+          'relationships': [
+            {
+              'id': 'group-1',
+              'type': 'scanlation_group',
+              'attributes': {'name': 'Mock Scanlations'},
+            }
+          ],
+        },
+        {
+          'id': 'test-chapter-2',
+          'type': 'chapter',
+          'attributes': {
+            'volume': '1',
+            'chapter': '2',
+            'title': 'The Second Chapter',
+            'translatedLanguage': 'en',
+            'publishAt': '2020-02-01T00:00:00+00:00',
+            'pages': 2,
+          },
+          'relationships': [
+            {
+              'id': 'group-1',
+              'type': 'scanlation_group',
+              'attributes': {'name': 'Mock Scanlations'},
+            }
+          ],
+        },
+      ],
+      'limit': 500,
+      'offset': 0,
+      'total': 2,
+      // Provide mangaId in response context so tests can assert on it.
+      '_mangaId': mangaId,
+    });
+    _writeJson(req.response, body);
+  } else if (path.startsWith('/manga/') && !path.contains('/feed')) {
+    // Manga detail — return fake manga metadata.
+    final mangaId = path.split('/')[2];
+    final body = jsonEncode({
+      'result': 'ok',
+      'response': 'entity',
+      'data': {
+        'id': mangaId,
+        'type': 'manga',
+        'attributes': {
+          'title': {'en': 'Mock Manga Title'},
+          'description': {
+            'en': 'A fake manga description for integration tests.'
+          },
+          'status': 'ongoing',
+        },
+        'relationships': [
+          {
+            'id': 'cover-art-1',
+            'type': 'cover_art',
+            'attributes': {'fileName': 'test-cover.jpg'},
+          }
+        ],
+      },
+    });
+    _writeJson(req.response, body);
   } else {
     // All other paths — image downloads, the /report POST, etc.
     // Serve an image from page_images/, matched by filename.
@@ -103,4 +178,12 @@ Future<void> _handle(HttpRequest req, int port, String hostIp) async {
   }
 
   await req.response.close();
+}
+
+void _writeJson(HttpResponse response, String body) {
+  response
+    ..statusCode = HttpStatus.ok
+    ..headers
+        .set(HttpHeaders.contentTypeHeader, 'application/json; charset=utf-8')
+    ..write(body);
 }

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
 import 'pages/library_page.dart';
+import 'pages/manga_detail_page.dart';
 import 'pages/reader_page.dart';
 import 'pages/search_page.dart';
 import 'pages/settings_page.dart';
@@ -40,8 +41,8 @@ final goRouter = GoRouter(
       path: '/manga/:mangaId',
       name: 'mangaDetail',
       builder: (context, state) {
-        // MangaDetailPage will be created in Feature 2.
-        throw UnimplementedError('MangaDetailPage not yet implemented');
+        final mangaId = state.pathParameters['mangaId']!;
+        return MangaDetailPage(mangaId: mangaId);
       },
     ),
     GoRoute(

@@ -81,49 +81,53 @@ The at-home server flow:
 
 ---
 
-## Feature 2 — Manga Detail Page & Real Chapter Navigation 🚧 (In Progress)
+## Feature 2 — Manga Detail Page & Real Chapter Navigation ✅
 
 **Goal**: Replace the hardcoded chapter ID with real manga browsing. A detail page shows manga info and its chapter list; tapping a chapter opens the reader.
 
 ### Tasks
 
-- [ ] Create `lib/models/manga.dart` — `Manga`, `MangaAttributes`, `CoverArt` with `fromJson`
-- [ ] Create `lib/models/chapter.dart` — `Chapter`, `ChapterAttributes` with `fromJson`
+- [x] Create `lib/models/manga.dart` — `Manga`, `MangaAttributes`, `CoverArt` with `fromJson`
+- [x] Create `lib/models/chapter.dart` — `Chapter`, `ChapterAttributes` with `fromJson`
   - `chapterNumber` must be `String?` — can be `null` (oneshots), `"1.5"` (bonus chapters), or absent. Never parse as a number.
   - Store scanlation group ID and name from the chapter's `scanlation_group` relationship
-- [ ] Add to `MangaDexApiService`:
+- [x] Add to `MangaDexApiService`:
   - `Future<Manga> fetchManga(String mangaId)` — `GET /manga/:id?includes[]=cover_art`
   - `Future<List<Chapter>> fetchChapterFeed(String mangaId, {int offset = 0})` — `GET /manga/:id/feed` with **no language filter** (fetch all languages so the UI can show availability), `includes[]=scanlation_group`, sorted by chapter ascending, up to 500 per page
-- [ ] Add to `api_providers.dart`:
+- [x] Add to `api_providers.dart`:
   - `mangaProvider(mangaId)` — `FutureProvider`
-  - `chapterFeedProvider(mangaId)` — paginated `AsyncNotifier`; fetches all languages and groups chapters by chapter number client-side
-- [ ] Create `lib/widgets/manga_card.dart` — cover image + title, used in both detail and search
-- [ ] Create `lib/widgets/chapter_list_tile.dart` — one tile per unique chapter number:
+  - `chapterFeedProvider(mangaId)` — paginated `FutureProvider`; fetches all languages (handles internal pagination) and groups chapters by chapter number client-side
+- [x] Create `lib/widgets/manga_card.dart` — cover image + title, used in both detail and search
+- [x] Create `lib/widgets/chapter_list_tile.dart` — one tile per unique chapter number:
   - Chapters are grouped by `chapterNumber` (`String?`); each tile represents one chapter number across all its available versions
   - **One group in preferred language**: shows chapter number, title, group name, date; tap opens reader directly
   - **Multiple groups in preferred language**: shows chapter number and date; tap expands an inline drawer listing all available scanlation groups to choose from
   - **Not available in preferred language** (other languages only): shown in a subdued style with a note (e.g. "Not available in English"); non-interactive
-- [ ] Create `lib/pages/manga_detail_page.dart`:
+- [x] Create `lib/pages/manga_detail_page.dart`:
   - 512px cover image, title, description, chapter list sorted by chapter number descending (newest first)
   - Renders one `ChapterListTile` per unique chapter number using grouped data from `chapterFeedProvider`
   - Tap single-group chapter → `context.push('/reader/:chapterId')`
   - Tap multi-group chapter → expand inline group picker drawer, then navigate on selection
-- [ ] Register `/manga/:mangaId` route in `app.dart`
-- [ ] Update `LibraryPage` stub button to navigate to a hardcoded manga detail page instead of directly to the reader
-- [ ] Remove hardcoded "Open Reader" button once Feature 2 is complete
+- [x] Register `/manga/:mangaId` route in `app.dart`
+- [x] Update `LibraryPage` stub button to navigate to a hardcoded manga detail page instead of directly to the reader
+- [x] Remove hardcoded "Open Reader" button (replaced with "Open Manga Detail (test)")
+- [x] Create `lib/providers/settings_provider.dart` — `Settings` with `preferredLanguage` and `contentRating` defaults (needed for chapter language filtering)
 
 ### Tests
 
-- Widget test: `test/widget/manga_detail_page_test.dart`
-  - Renders cover, title, chapter list from mocked providers
+- [x] Widget test: `test/widget/manga_detail_page_test.dart`
+  - Renders manga title, description, and chapter list from mocked providers
   - Shows loading state
-  - Shows error state
-- Integration test: `integration_test/manga_detail_flow_test.dart`
+  - Shows manga error + retry button
+  - Shows chapters error section independently
+  - Unavailable-language chapters shown subdued
+  - Multi-group chapter expands to show group list
+- [x] Integration test: `integration_test/reader_flow_test.dart` (updated)
   - Navigate to detail page → chapter list appears → tap chapter → reader opens
 
 ---
 
-## Feature 3 — Search Page
+## Feature 3 — Search Page 🚧 (In Progress)
 
 **Goal**: Users can search for any manga by title and navigate to its detail page.
 
