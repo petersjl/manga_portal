@@ -18,7 +18,8 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.byType(NavigationBar), findsOneWidget);
-      expect(find.text('Library'), findsOneWidget);
+      // LibraryPage body also renders a 'Library' heading, so there are ≥2.
+      expect(find.text('Library'), findsAtLeastNWidgets(2));
       expect(find.text('Search'), findsOneWidget);
       expect(find.text('Settings'), findsOneWidget);
     });

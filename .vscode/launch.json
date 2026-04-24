@@ -1,0 +1,32 @@
+{
+	"version": "0.2.0",
+	"configurations": [
+		{
+			"name": "Flutter: Run (debug)",
+			"request": "launch",
+			"type": "dart",
+			"flutterMode": "debug"
+		},
+		{
+			"name": "Flutter: Run with Driver",
+			"request": "launch",
+			"type": "dart",
+			"program": "test/driver_main.dart",
+			"flutterMode": "debug"
+		},
+		{
+			"name": "Test: All widget tests",
+			"request": "launch",
+			"type": "dart",
+			"program": "test/",
+			"flutterMode": "debug"
+		},
+		{
+			"name": "Test: Integration tests (mock server)",
+			"request": "launch",
+			"type": "dart",
+			"program": "tool/run_integration_tests.dart",
+			"console": "terminal"
+		}
+	]
+}

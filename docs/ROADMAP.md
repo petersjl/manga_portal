@@ -36,7 +36,7 @@ Features are implemented one at a time in order. Each feature ships with accompa
 
 ---
 
-## Feature 1 — Steel Thread: Hardcoded Reader 🚧 (In Progress)
+## Feature 1 — Steel Thread: Hardcoded Reader ✅
 
 **Goal**: Navigate from the app to a working chapter reader using a hardcoded manga and chapter ID. Proves the full image-fetching pipeline works end-to-end before building any discovery features.
 
@@ -51,37 +51,37 @@ The at-home server flow:
 
 ### Tasks
 
-- [ ] Create `lib/models/chapter_pages.dart` — `AtHomeServer` model with `fromJson`
-- [ ] Create `lib/services/mangadex_api.dart` — `MangaDexApiService`:
+- [x] Create `lib/models/chapter_pages.dart` — `AtHomeServer` model with `fromJson`
+- [x] Create `lib/services/mangadex_api.dart` — `MangaDexApiService`:
   - Dio instance with `User-Agent: manga-portal/1.0` interceptor
   - `Future<AtHomeServer> fetchAtHomeServer(String chapterId)`
-- [ ] Create `lib/providers/api_providers.dart`:
+- [x] Create `lib/providers/api_providers.dart`:
   - `mangaDexApiServiceProvider` — provides `MangaDexApiService`
   - `atHomeServerProvider(chapterId)` — `FutureProvider` wrapping `fetchAtHomeServer`
-- [ ] Create `lib/widgets/reader_page_image.dart`:
-  - `CachedNetworkImage` widget for a single page
+- [x] Create `lib/widgets/reader_page_image.dart`:
+  - `Image` widget backed by `CachedNetworkImageProvider` for a single page
   - Reports success/failure to `api.mangadex.network/report` when base URL is not from `mangadex.org`
   - On failure: notifies parent to refresh the at-home server URL
-- [ ] Create `lib/pages/reader_page.dart` — `ReaderPage(chapterId: String)`:
+- [x] Create `lib/pages/reader_page.dart` — `ReaderPage(chapterId: String)`:
   - Watches `atHomeServerProvider`
   - Builds `PageView` of `ReaderPageImage` widgets (horizontal paged, left-to-right)
   - Shows `CircularProgressIndicator` while loading
   - Shows human-readable error + retry button on failure
-  - Preloads adjacent pages: call `precacheImage` for at least 3 pages ahead and 1 page behind the current index so pages are never seen loading during normal reading
-- [ ] Add a temporary "Open Reader" button to `LibraryPage` with a hardcoded chapter ID pointing to a known-good MangaDex chapter
+  - Preloads adjacent pages: immediate window (3 ahead, 1 behind) fired concurrently; background sequential preload for the entire chapter in distance order from current page
+- [x] Add a temporary "Open Reader" button to `LibraryPage` with a hardcoded chapter ID pointing to a known-good MangaDex chapter
 
 ### Tests
 
-- Widget test: `test/widget/reader_page_test.dart`
+- [x] Widget test: `test/widget/reader_page_test.dart`
   - Happy path: mock `atHomeServerProvider`, verify `PageView` and page images render
   - Loading state: verify `CircularProgressIndicator` shown while provider is loading
   - Error state: verify error message + retry button shown when provider throws
-- Integration test: `integration_test/reader_flow_test.dart`
+- [x] Integration test: `integration_test/reader_flow_test.dart`
   - Tap "Open Reader" button → `ReaderPage` navigates and loads pages (mocked HTTP)
 
 ---
 
-## Feature 2 — Manga Detail Page & Real Chapter Navigation
+## Feature 2 — Manga Detail Page & Real Chapter Navigation 🚧 (In Progress)
 
 **Goal**: Replace the hardcoded chapter ID with real manga browsing. A detail page shows manga info and its chapter list; tapping a chapter opens the reader.
 

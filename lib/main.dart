@@ -3,9 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'app.dart';
 
-void main() {
-  runApp(const ProviderScope(child: MangaPortal()));
-}
+void main() => runApp(const ProviderScope(child: MangaPortal()));
 
 class MangaPortal extends StatelessWidget {
   const MangaPortal({super.key});

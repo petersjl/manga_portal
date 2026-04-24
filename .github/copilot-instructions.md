@@ -247,12 +247,12 @@ After all tasks and tests for a feature are done, always follow this sequence be
 
 ## Live App Testing (Flutter Driver)
 
-To verify features by interacting with the running app, use the Flutter MCP tools. The app must be launched with the driver entrypoint (`lib/driver_main.dart`), which enables the Flutter Driver extension.
+To verify features by interacting with the running app, use the Flutter MCP tools. The app must be launched with the driver entrypoint (`test/driver_main.dart`), which enables the Flutter Driver extension.
 
 ### Setup (already done — only repeat if files are missing)
 
 - `flutter_driver` is a dev dependency in `pubspec.yaml` (under `flutter_driver: sdk: flutter`)
-- `lib/driver_main.dart` exists and calls `enableFlutterDriverExtension()` before `app.main()`
+- `test/driver_main.dart` exists and calls `enableFlutterDriverExtension()` before `app.main()`
 
 ### Launch sequence
 
@@ -263,7 +263,7 @@ To verify features by interacting with the running app, use the Flutter MCP tool
 2. Launch with driver entrypoint using mcp_dart_sdk_mcp__launch_app:
    root: /path/to/manga_portal
    device: emulator-XXXX
-   target: lib/driver_main.dart
+   target: test/driver_main.dart
    → returns { dtdUri, pid }
 
 3. Connect DTD using mcp_dart_sdk_mcp__dtd:
@@ -318,9 +318,43 @@ testWidgets('ReaderPage shows first page image', (tester) async {
 ### Integration tests (`integration_test/`)
 
 - Located in `integration_test/`.
-- Use a mocked Dio interceptor (injected via provider) to intercept HTTP and return fixture JSON — no live API calls in CI.
+- **Never use live API calls in tests.** All HTTP is handled by a host-side mock server — no Riverpod overrides or Dio interceptors needed in test code.
 - Each integration test covers a full user flow: tap action → navigate → verify result.
 - Every feature must ship at least one integration test for its primary user flow.
+- Tests call `app.main()` directly with no overrides; the mock base URL is injected at build time via `--dart-define=MOCK_BASE_URL`.
+
+#### Mock server architecture
+
+The integration test infrastructure consists of two files in `tool/`:
+
+| File                              | Purpose                                                                                                                                                                                                                                                                                                     |
+| --------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `tool/mock_server/main.dart`      | Standalone Dart HTTP server. Handles `GET /at-home/server/:id` (returns fake at-home JSON pointing back at itself), `POST /report` (silently accepted), and all other paths (serves images from `tool/mock_server/page_images/` by filename, falling back to the first file). Prints `PORT=<n>` on startup. |
+| `tool/run_integration_tests.dart` | Runner script. Starts the mock server, reads its port, then runs `flutter test integration_test/` with `--dart-define=MOCK_BASE_URL=http://<hostIp>:<port>`. Kills the server on exit.                                                                                                                      |
+
+`lib/providers/api_providers.dart` reads the dart-define at compile time:
+
+```dart
+const mockBaseUrl = String.fromEnvironment('MOCK_BASE_URL');
+return MangaDexApiService(baseUrl: mockBaseUrl.isEmpty ? null : mockBaseUrl);
+```
+
+#### Running integration tests
+
+**Via VS Code**: use the **"Test: Integration tests (mock server)"** launch configuration (runs `tool/run_integration_tests.dart` in a terminal).
+
+**Via command line**:
+
+```
+dart run tool/run_integration_tests.dart [--host-ip=<ip>] [--device=<id>]
+```
+
+- `--host-ip`: IP the device uses to reach the host machine. Default `10.0.2.2` (Android emulator). Use your WiFi IP for a real device.
+- `--device`: Flutter device ID. Default `emulator-5554`.
+
+#### Adding sample page images
+
+Place image files in `tool/mock_server/page_images/`. The at-home response advertises filenames that match what's in that directory. Any filename not present falls back to the first file found, so the server never 404s on image requests.
 
 ### Test file naming
 

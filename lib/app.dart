@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
 import 'pages/library_page.dart';
+import 'pages/reader_page.dart';
 import 'pages/search_page.dart';
 import 'pages/settings_page.dart';
 
@@ -47,8 +48,8 @@ final goRouter = GoRouter(
       path: '/reader/:chapterId',
       name: 'reader',
       builder: (context, state) {
-        // ReaderPage will be created in Feature 1.
-        throw UnimplementedError('ReaderPage not yet implemented');
+        final chapterId = state.pathParameters['chapterId']!;
+        return ReaderPage(chapterId: chapterId);
       },
     ),
   ],
