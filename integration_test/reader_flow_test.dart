@@ -50,7 +50,7 @@ void main() {
     await tester.pumpAndSettle();
 
     // ── Reader page ─────────────────────────────────────────────────────────
-    // The mock server returns 2 pages, so the counter should show "1 / 2".
-    expect(find.text('1 / 2'), findsOneWidget);
+    // The mock server returns 5 pages, so the counter should show "1 / 5".
+    expect(find.text('1 / 5'), findsOneWidget);
   });
 }

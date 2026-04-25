@@ -235,6 +235,7 @@ After all tasks and tests for a feature are done, always follow this sequence be
 3. **Update documentation** — Once the user confirms the feature is complete:
    - In `docs/ROADMAP.md`, mark all tasks for the completed feature with `[x]` and add `✅` to the feature heading.
    - Mark the next feature heading with `🚧 (In Progress)`.
+   - Add an `### Extras` section under the completed feature's `### Tests` section listing anything implemented beyond the original task list (e.g. additional UI affordances, bug fixes, infrastructure improvements). Keep each entry to one or two sentences.
 4. **Do not start the next feature** until the user explicitly gives the go-ahead after step 2.
 
 ---

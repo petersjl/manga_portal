@@ -158,20 +158,20 @@ _All tasks and tests complete. Verified on emulator: real MangaDex search return
 
 ---
 
-## Feature 4 — Reading Progress & Reader Polish 🚧 (In Progress)
+## Feature 4 — Reading Progress & Reader Polish ✅
 
 **Goal**: The reader remembers where you left off per chapter. Quality modes and reading direction are configurable. MangaDex@Home reporting is fully compliant.
 
 ### Tasks
 
-- [ ] Create `lib/services/local_progress.dart` — `LocalProgressService`:
+- [x] Create `lib/services/local_progress.dart` — `LocalProgressService`:
   - `saveProgress(mangaId, chapterId, pageIndex)`
   - `getProgress(mangaId)` → `{chapterId, pageIndex}`
   - Uses `SharedPreferences` keys: `progress_{mangaId}_chapter`, `progress_{mangaId}_page`
-- [ ] Create `lib/providers/reader_provider.dart`:
+- [x] Create `lib/providers/reader_provider.dart`:
   - `readerModeProvider` — paged vs vertical scroll per manga (persisted locally)
   - `imageQualityProvider` — data vs data-saver (from settings)
-- [ ] Update `ReaderPage`:
+- [x] Update `ReaderPage`:
   - Now accepts `mangaId` and the full sorted chapter list in addition to `chapterId`, so it can determine next/prev chapters without extra API calls
   - On open: restore saved page index for this chapter
   - On page change: save progress via `LocalProgressService`; call `precacheImage` for 3 pages ahead and 1 behind at all times
@@ -183,7 +183,7 @@ _All tasks and tests complete. Verified on emulator: real MangaDex search return
     3. Chapter number exists but not in preferred language → show **language unavailability page** (full-screen message with button to return to chapter select)
   - On chapter completion (swiping past the transition page): enqueue `POST /chapter/:id/read` for when auth is added
   - Support image quality toggle (data vs data-saver) from `imageQualityProvider`
-- [ ] Fully implement `ReaderPageImage` MD@Home reporting:
+- [x] Fully implement `ReaderPageImage` MD@Home reporting:
   - Track `bytes` and `duration` for each image load
   - `cached` = response `X-Cache` header starts with `"HIT"`
   - POST to `https://api.mangadex.network/report` for non-`mangadex.org` base URLs
@@ -191,19 +191,33 @@ _All tasks and tests complete. Verified on emulator: real MangaDex search return
 
 ### Tests
 
-- Widget test: `test/widget/reader_progress_test.dart`
+- [x] Widget test: `test/widget/reader_progress_test.dart`
   - Progress is saved on page change
   - Reader opens to saved page index
   - Swiping past the last page shows the chapter transition page
   - Swiping back from the first page shows the previous chapter transition page
   - Next chapter not in preferred language shows the language unavailability page
-- Integration test: `integration_test/reader_progress_flow_test.dart`
+- [x] Integration test: `integration_test/reader_progress_flow_test.dart`
   - Open chapter at page 3, close, reopen — starts at page 3
   - Swipe past last page → transition page shown → swipe again → next chapter loads
+  - Chapter state indicators ("Start" / "Continue" / "Read") reflect progress correctly
+  - "Continue" button on detail page opens reader at the saved page
+  - Opening a chapter without paging does not overwrite in-progress state
+  - Clearing reading history from Settings resets all chapter progress
+
+### Extras
+
+- **`SettingsPage` — Clear reading history**: Added a "Clear reading history" action to the Settings page. Tapping it shows a confirmation dialog; on confirm, all `SharedPreferences` progress keys are cleared and a snackbar confirms the action.
+- **Chapter state indicators on detail page**: `MangaDetailPage` displays per-chapter status badges — "Start Ch. X", "Continue Ch. X" (with saved page shown), and "Read" — reflecting the current `LocalProgressService` state. The primary action button at the top of the page mirrors the most recent in-progress or next unread chapter.
+- **`_hasUserPaged` guard**: Progress is only written to `LocalProgressService` after the user has actively swiped at least once in the reader session. Opening a chapter and immediately closing it does not overwrite a previously saved page index.
+- **Integration test infrastructure fixes**: Three bugs in the integration test suite were diagnosed and fixed:
+  - `reader_flow_test.dart` page count assertion updated from `"1 / 2"` to `"1 / 5"` to match the mock server's 5-page chapters.
+  - `goRouter` singleton navigation state leak between `testWidgets` calls fixed by adding `goRouter.go('/') + pumpAndSettle()` at the start of each test's navigation helper.
+  - `SharedPreferences` state leak between `testWidgets` calls fixed by adding a `setUp(() async { prefs.clear() })` block.
 
 ---
 
-## Feature 5 — Library Page
+## Feature 5 — Library Page 🚧 (In Progress)
 
 **Goal**: Users can save manga to a local library and return to them quickly.
 

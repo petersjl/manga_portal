@@ -20,6 +20,30 @@ class MangaDetailPage extends ConsumerWidget {
     final mangaAsync = ref.watch(mangaProvider(mangaId));
     final chaptersAsync = ref.watch(chapterFeedProvider(mangaId));
     final settings = ref.watch(settingsNotifierProvider);
+    final progressAsync = ref.watch(localProgressServiceProvider);
+
+    // Current chapter the user is partway through (null when progress unknown).
+    final currentChapterId = progressAsync.maybeWhen(
+      data: (service) => service.getProgress(mangaId).chapterId,
+      orElse: () => null,
+    );
+    // Set of chapter IDs the user has explicitly finished.
+    final readChapterIds = progressAsync.maybeWhen(
+      data: (service) => service.getReadChapterIds(mangaId),
+      orElse: () => const <String>{},
+    );
+
+    // Chapter to open when the user taps the action button.
+    // • Has progress → resume that chapter.
+    // • No progress  → start from the lowest available chapter in their language.
+    final actionChapter = chaptersAsync.maybeWhen(
+      data: (chapters) => _resolveActionChapter(
+        chapters,
+        currentChapterId,
+        settings.preferredLanguage,
+      ),
+      orElse: () => null,
+    );
 
     return Scaffold(
       body: mangaAsync.when(
@@ -35,6 +59,13 @@ class MangaDetailPage extends ConsumerWidget {
           slivers: [
             _MangaAppBar(manga: manga),
             _MangaInfo(manga: manga, locale: settings.preferredLanguage),
+            if (actionChapter != null)
+              _ReadingButton(
+                chapter: actionChapter,
+                isResuming: currentChapterId != null,
+                onTap: () => context
+                    .push('/reader/${actionChapter.id}?mangaId=$mangaId'),
+              ),
             chaptersAsync.when(
               loading: () => const SliverToBoxAdapter(
                 child: Padding(
@@ -51,6 +82,8 @@ class MangaDetailPage extends ConsumerWidget {
               data: (chapters) => _ChapterList(
                 chapters: chapters,
                 preferredLanguage: settings.preferredLanguage,
+                currentChapterId: currentChapterId,
+                readChapterIds: readChapterIds,
                 onChapterSelected: (chapterId) =>
                     context.push('/reader/$chapterId?mangaId=$mangaId'),
               ),
@@ -190,11 +223,19 @@ class _ChapterList extends StatelessWidget {
     required this.chapters,
     required this.preferredLanguage,
     required this.onChapterSelected,
+    this.currentChapterId,
+    this.readChapterIds = const {},
   });
 
   final List<Chapter> chapters;
   final String preferredLanguage;
   final void Function(String chapterId) onChapterSelected;
+
+  /// The ID of the chapter the user is currently partway through, if any.
+  final String? currentChapterId;
+
+  /// Chapter IDs the user has explicitly finished (swiped past the last page).
+  final Set<String> readChapterIds;
 
   @override
   Widget build(BuildContext context) {
@@ -217,12 +258,33 @@ class _ChapterList extends StatelessWidget {
             key: ValueKey(entry.key),
             chapters: entry.value,
             preferredLanguage: preferredLanguage,
+            readState:
+                _readStateFor(entry.value, currentChapterId, readChapterIds),
             onChapterSelected: onChapterSelected,
           );
         },
         childCount: groups.length,
       ),
     );
+  }
+
+  /// Determines the read state for a chapter group.
+  ///
+  /// - [reading]: any version in the group is the user's current chapter.
+  /// - [read]:    at least one version has been explicitly completed.
+  /// - [unread]:  none of the above.
+  static ChapterReadState _readStateFor(
+    List<Chapter> groupChapters,
+    String? currentChapterId,
+    Set<String> readChapterIds,
+  ) {
+    if (groupChapters.any((c) => c.id == currentChapterId)) {
+      return ChapterReadState.reading;
+    }
+    if (groupChapters.any((c) => readChapterIds.contains(c.id))) {
+      return ChapterReadState.read;
+    }
+    return ChapterReadState.unread;
   }
 
   /// Groups chapters by their chapter number and sorts descending.
@@ -247,6 +309,79 @@ class _ChapterList extends StatelessWidget {
       });
 
     return entries;
+  }
+}
+
+// ── Action chapter resolution ─────────────────────────────────────────────────
+
+/// Returns the chapter to open when the user taps the read button.
+///
+/// If [currentChapterId] is set and found in [chapters], returns that chapter
+/// (resume). Otherwise returns the lowest-numbered chapter available in
+/// [preferredLanguage] (start from beginning). Returns null if no chapters in
+/// the preferred language exist.
+Chapter? _resolveActionChapter(
+  List<Chapter> chapters,
+  String? currentChapterId,
+  String preferredLanguage,
+) {
+  final available = chapters
+      .where((c) => c.attributes.translatedLanguage == preferredLanguage)
+      .toList();
+  if (available.isEmpty) return null;
+
+  if (currentChapterId != null) {
+    final current =
+        available.where((c) => c.id == currentChapterId).firstOrNull;
+    if (current != null) return current;
+  }
+
+  // Sort ascending to find the lowest chapter number.
+  available.sort((a, b) {
+    final aNum = double.tryParse(a.attributes.chapterNumber ?? '');
+    final bNum = double.tryParse(b.attributes.chapterNumber ?? '');
+    if (aNum != null && bNum != null) return aNum.compareTo(bNum);
+    if (a.attributes.chapterNumber == null) return -1;
+    if (b.attributes.chapterNumber == null) return 1;
+    return a.attributes.chapterNumber!.compareTo(b.attributes.chapterNumber!);
+  });
+  return available.first;
+}
+
+// ── Read / Continue button ────────────────────────────────────────────────────
+
+class _ReadingButton extends StatelessWidget {
+  const _ReadingButton({
+    required this.chapter,
+    required this.isResuming,
+    required this.onTap,
+  });
+
+  final Chapter chapter;
+
+  /// true → "Continue Ch. X", false → "Start Ch. X"
+  final bool isResuming;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final num = chapter.attributes.chapterNumber;
+    final chapterLabel = num != null ? 'Ch. $num' : 'Oneshot';
+    final label = isResuming ? 'Continue $chapterLabel' : 'Start $chapterLabel';
+
+    return SliverToBoxAdapter(
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
+        child: FilledButton.icon(
+          icon: Icon(isResuming ? Icons.play_arrow : Icons.play_arrow_outlined),
+          label: Text(label),
+          onPressed: onTap,
+          style: FilledButton.styleFrom(
+            minimumSize: const Size(double.infinity, 48),
+          ),
+        ),
+      ),
+    );
   }
 }
 

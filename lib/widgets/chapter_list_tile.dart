@@ -2,6 +2,18 @@ import 'package:flutter/material.dart';
 
 import '../models/chapter.dart';
 
+/// Reading state for a chapter group, used to style the corresponding tile.
+enum ChapterReadState {
+  /// No progress recorded — user hasn't started this chapter.
+  unread,
+
+  /// This is the chapter the user is currently partway through.
+  reading,
+
+  /// User has read past this chapter.
+  read,
+}
+
 /// Displays all versions of a single chapter number.
 ///
 /// Receives [chapters] — all [Chapter] objects that share the same chapter
@@ -18,11 +30,13 @@ class ChapterListTile extends StatefulWidget {
     required this.chapters,
     required this.preferredLanguage,
     required this.onChapterSelected,
+    this.readState = ChapterReadState.unread,
   });
 
   final List<Chapter> chapters;
   final String preferredLanguage;
   final void Function(String chapterId) onChapterSelected;
+  final ChapterReadState readState;
 
   @override
   State<ChapterListTile> createState() => _ChapterListTileState();
@@ -52,6 +66,7 @@ class _ChapterListTileState extends State<ChapterListTile> {
       return _SingleGroupTile(
         label: title,
         chapter: preferred.first,
+        readState: widget.readState,
         onTap: () => widget.onChapterSelected(preferred.first.id),
       );
     }
@@ -59,6 +74,7 @@ class _ChapterListTileState extends State<ChapterListTile> {
     return _MultiGroupTile(
       label: title,
       chapters: preferred,
+      readState: widget.readState,
       expanded: _expanded,
       onToggle: () => setState(() => _expanded = !_expanded),
       onChapterSelected: widget.onChapterSelected,
@@ -100,11 +116,13 @@ class _SingleGroupTile extends StatelessWidget {
     required this.label,
     required this.chapter,
     required this.onTap,
+    this.readState = ChapterReadState.unread,
   });
 
   final String label;
   final Chapter chapter;
   final VoidCallback onTap;
+  final ChapterReadState readState;
 
   @override
   Widget build(BuildContext context) {
@@ -115,12 +133,43 @@ class _SingleGroupTile extends StatelessWidget {
       if (date.isNotEmpty) date,
     ].join(' · ');
 
-    return ListTile(
-      title: Text(label),
-      subtitle: subtitle.isNotEmpty ? Text(subtitle) : null,
-      trailing: const Icon(Icons.chevron_right),
+    final isRead = readState == ChapterReadState.read;
+    final isReading = readState == ChapterReadState.reading;
+    final dimColor =
+        Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.5);
+
+    final tile = ListTile(
+      title: Text(
+        label,
+        style: isRead ? TextStyle(color: dimColor) : null,
+      ),
+      subtitle: subtitle.isNotEmpty
+          ? Text(
+              subtitle,
+              style: isRead ? TextStyle(color: dimColor) : null,
+            )
+          : null,
+      trailing: isRead
+          ? Icon(Icons.check_circle_outline, color: dimColor, size: 20)
+          : const Icon(Icons.chevron_right),
       onTap: onTap,
     );
+
+    if (isReading) {
+      return DecoratedBox(
+        decoration: BoxDecoration(
+          border: Border(
+            left: BorderSide(
+              color: Theme.of(context).colorScheme.primary,
+              width: 3,
+            ),
+          ),
+        ),
+        child: tile,
+      );
+    }
+
+    return tile;
   }
 }
 
@@ -133,6 +182,7 @@ class _MultiGroupTile extends StatelessWidget {
     required this.expanded,
     required this.onToggle,
     required this.onChapterSelected,
+    this.readState = ChapterReadState.unread,
   });
 
   final String label;
@@ -140,20 +190,47 @@ class _MultiGroupTile extends StatelessWidget {
   final bool expanded;
   final VoidCallback onToggle;
   final void Function(String chapterId) onChapterSelected;
+  final ChapterReadState readState;
 
   @override
   Widget build(BuildContext context) {
-    return Column(
+    final isRead = readState == ChapterReadState.read;
+    final isReading = readState == ChapterReadState.reading;
+    final dimColor =
+        Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.5);
+
+    final header = ListTile(
+      title: Text(
+        label,
+        style: isRead ? TextStyle(color: dimColor) : null,
+      ),
+      subtitle: Text(
+        '${chapters.length} translations',
+        style: isRead ? TextStyle(color: dimColor) : null,
+      ),
+      trailing: Icon(
+        expanded ? Icons.expand_less : Icons.expand_more,
+        color: isRead ? dimColor : null,
+      ),
+      onTap: onToggle,
+    );
+
+    final column = Column(
       mainAxisSize: MainAxisSize.min,
       children: [
-        ListTile(
-          title: Text(label),
-          subtitle: Text('${chapters.length} translations'),
-          trailing: Icon(
-            expanded ? Icons.expand_less : Icons.expand_more,
-          ),
-          onTap: onToggle,
-        ),
+        isReading
+            ? DecoratedBox(
+                decoration: BoxDecoration(
+                  border: Border(
+                    left: BorderSide(
+                      color: Theme.of(context).colorScheme.primary,
+                      width: 3,
+                    ),
+                  ),
+                ),
+                child: header,
+              )
+            : header,
         AnimatedSize(
           duration: const Duration(milliseconds: 200),
           child: expanded
@@ -179,6 +256,8 @@ class _MultiGroupTile extends StatelessWidget {
         const Divider(height: 1),
       ],
     );
+
+    return column;
   }
 }
 

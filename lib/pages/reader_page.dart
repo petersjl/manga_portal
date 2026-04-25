@@ -56,6 +56,11 @@ class _ReaderPageState extends ConsumerState<ReaderPage> {
   bool _initialPreloadDone = false;
   bool _progressRestored = false;
 
+  // True once the user has scrolled past the first page in the current chapter
+  // load. Prevents opening a chapter from immediately writing it as the
+  // in-progress chapter before the user has read anything.
+  bool _hasUserPaged = false;
+
   // Allows only one at-home server refresh per chapter load to prevent an
   // infinite failure → invalidate loop when images are consistently unavailable.
   bool _serverRefreshUsed = false;
@@ -80,16 +85,25 @@ class _ReaderPageState extends ConsumerState<ReaderPage> {
 
   // ── Chapter loading ────────────────────────────────────────────────────────
 
-  void _loadChapter(String newChapterId, {int initialMangaPage = 0}) {
+  void _loadChapter(
+    String newChapterId, {
+    int initialMangaPage = 0,
+    bool fromTransition = false,
+  }) {
     _loadGeneration++;
     _pageController.dispose();
     _pageController = PageController(initialPage: 1 + initialMangaPage);
+    // Pressing a transition button is an explicit intent to start reading the
+    // new chapter, so immediately record it as in-progress without waiting for
+    // the user to swipe past page 0.
+    if (fromTransition) _saveProgressFor(newChapterId, initialMangaPage);
     setState(() {
       _currentChapterId = newChapterId;
       _currentMangaPage = initialMangaPage;
       _isOnTransitionPage = false;
       _initialPreloadDone = false;
       _serverRefreshUsed = false;
+      _hasUserPaged = fromTransition; // already counts as having paged
       _lastServer = null;
       // Do NOT reset _progressRestored — only restore progress for the entry
       // chapter; subsequent chapters load from the beginning.
@@ -119,11 +133,23 @@ class _ReaderPageState extends ConsumerState<ReaderPage> {
     }
   }
 
-  void _saveProgress(int pageIndex) {
+  void _saveProgressFor(String chapterId, int pageIndex) {
     if (widget.mangaId == null) return;
     ref.read(localProgressServiceProvider.future).then((service) {
       if (mounted) {
-        service.saveProgress(widget.mangaId!, _currentChapterId, pageIndex);
+        service.saveProgress(widget.mangaId!, chapterId, pageIndex);
+      }
+    });
+  }
+
+  void _saveProgress(int pageIndex) =>
+      _saveProgressFor(_currentChapterId, pageIndex);
+
+  void _markCurrentChapterRead() {
+    if (widget.mangaId == null) return;
+    ref.read(localProgressServiceProvider.future).then((service) {
+      if (mounted) {
+        service.markChapterRead(widget.mangaId!, _currentChapterId);
       }
     });
   }
@@ -140,10 +166,16 @@ class _ReaderPageState extends ConsumerState<ReaderPage> {
         _currentMangaPage = mangaPage;
         _isOnTransitionPage = false;
       });
-      _saveProgress(mangaPage);
+      // Only record progress once the user has moved past the first page.
+      // This prevents opening a chapter (which parks at page 0) from
+      // immediately overwriting the tracked in-progress chapter.
+      if (mangaPage > 0) _hasUserPaged = true;
+      if (_hasUserPaged) _saveProgress(mangaPage);
       _startPreload(mangaPage, server);
     } else {
       setState(() => _isOnTransitionPage = true);
+      // User swiped past the last page — chapter is complete.
+      if (viewIndex == pages.length + 1) _markCurrentChapterRead();
     }
   }
 
@@ -410,7 +442,7 @@ class _ReaderPageState extends ConsumerState<ReaderPage> {
           currentChapterId: _currentChapterId,
           allChapters: chapters,
           onLoad: result is _ChapterNavAvailable
-              ? () => _loadChapter(result.chapter.id)
+              ? () => _loadChapter(result.chapter.id, fromTransition: true)
               : null,
           onBack: () => context.pop(),
         );
