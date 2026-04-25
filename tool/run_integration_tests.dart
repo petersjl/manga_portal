@@ -68,8 +68,8 @@ void main(List<String> args) async {
   final mockBaseUrl = 'http://$hostIp:$port';
   _log('Mock server is up on port $port. App will use: $mockBaseUrl');
 
-  // ── 2. Run the integration tests ──────────────────────────────────────────
-  _log('Running: flutter test integration_test/ -d $device');
+  // ── 2. Run integration tests ──────────────────────────────────────────────
+  _log('Running integration tests: flutter test integration_test/ -d $device');
 
   final testProcess = await Process.start(
     'flutter',

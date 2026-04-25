@@ -318,19 +318,21 @@ testWidgets('ReaderPage shows first page image', (tester) async {
 ### Integration tests (`integration_test/`)
 
 - Located in `integration_test/`.
-- **Never use live API calls in tests.** All HTTP is handled by a host-side mock server — no Riverpod overrides or Dio interceptors needed in test code.
+- **Never use live API calls in tests.** All HTTP is handled by a **host-side mock server** started by `tool/run_integration_tests.dart` — no Riverpod overrides or Dio interceptors needed in test code.
 - Each integration test covers a full user flow: tap action → navigate → verify result.
 - Every feature must ship at least one integration test for its primary user flow.
-- Tests call `app.main()` directly with no overrides; the mock base URL is injected at build time via `--dart-define=MOCK_BASE_URL`.
+- Tests call `app.main()` directly with no overrides; the mock base URL is injected at compile time via `--dart-define=MOCK_BASE_URL`.
+- Integration tests **fail fast with a clear error** when `MOCK_BASE_URL` is not set, directing developers to use the runner.
 
 #### Mock server architecture
 
-The integration test infrastructure consists of two files in `tool/`:
+The integration test infrastructure consists of:
 
-| File                              | Purpose                                                                                                                                                                                                                                                                                                     |
-| --------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `tool/mock_server/main.dart`      | Standalone Dart HTTP server. Handles `GET /at-home/server/:id` (returns fake at-home JSON pointing back at itself), `POST /report` (silently accepted), and all other paths (serves images from `tool/mock_server/page_images/` by filename, falling back to the first file). Prints `PORT=<n>` on startup. |
-| `tool/run_integration_tests.dart` | Runner script. Starts the mock server, reads its port, then runs `flutter test integration_test/` with `--dart-define=MOCK_BASE_URL=http://<hostIp>:<port>`. Kills the server on exit.                                                                                                                      |
+| File                              | Purpose                                                                                                                                                                                              |
+| --------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `tool/mock_server/main.dart`      | Standalone Dart HTTP server running on the host. Handles `GET /at-home/server/:id`, `GET /manga/:id`, `GET /manga/:id/feed`, `POST /report`, and all image paths (serves files from `page_images/`). |
+| `tool/run_integration_tests.dart` | Starts the mock server and runs **integration tests only** (`integration_test/`) with `--dart-define=MOCK_BASE_URL`.                                                                                 |
+| `tool/run_all_tests.dart`         | Starts the mock server and runs **widget tests then integration tests**. Use this when you want to run the full suite.                                                                               |
 
 `lib/providers/api_providers.dart` reads the dart-define at compile time:
 
@@ -339,22 +341,21 @@ const mockBaseUrl = String.fromEnvironment('MOCK_BASE_URL');
 return MangaDexApiService(baseUrl: mockBaseUrl.isEmpty ? null : mockBaseUrl);
 ```
 
-#### Running integration tests
+#### Running tests
 
-**Via VS Code**: use the **"Test: Integration tests (mock server)"** launch configuration (runs `tool/run_integration_tests.dart` in a terminal).
+| Goal                              | Command                                    |
+| --------------------------------- | ------------------------------------------ |
+| Widget tests only                 | `flutter test test/`                       |
+| Integration tests only            | `dart run tool/run_integration_tests.dart` |
+| Full suite (widget + integration) | `dart run tool/run_all_tests.dart`         |
 
-**Via command line**:
+All three accept `--host-ip=<ip>` (default `10.0.2.2`) and `--device=<id>` (default `emulator-5554`).
 
-```
-dart run tool/run_integration_tests.dart [--host-ip=<ip>] [--device=<id>]
-```
-
-- `--host-ip`: IP the device uses to reach the host machine. Default `10.0.2.2` (Android emulator). Use your WiFi IP for a real device.
-- `--device`: Flutter device ID. Default `emulator-5554`.
+**Do not** run `flutter test integration_test/` directly — it will fail with a clear error instructing you to use the runner.
 
 #### Adding sample page images
 
-Place image files in `tool/mock_server/page_images/`. The at-home response advertises filenames that match what's in that directory. Any filename not present falls back to the first file found, so the server never 404s on image requests.
+Place image files in `tool/mock_server/page_images/`. The at-home response advertises filenames matching that directory. Any filename not found falls back to the first file, so the server never 404s on image requests.
 
 ### Test file naming
 

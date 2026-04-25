@@ -41,8 +41,9 @@ Future<List<Chapter>> chapterFeed(Ref ref, String mangaId) async {
     allChapters.addAll(batch);
     if (batch.length < 500) break; // Received last page.
     offset += batch.length;
-    if (offset >= 9500)
+    if (offset >= 9500) {
       break; // Stay within API limit (offset + limit ≤ 10000).
+    }
   }
 
   return allChapters;

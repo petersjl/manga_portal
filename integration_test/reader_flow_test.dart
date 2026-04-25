@@ -1,11 +1,11 @@
 /// Integration test for the reader flow.
 ///
-/// Run via the host-side runner so the mock server is available:
+/// Requires the host-side mock server. Run via:
 ///   dart run tool/run_integration_tests.dart
 ///
-/// The runner injects --dart-define=MOCK_BASE_URL=http://<host>:<port> so the
-/// app calls the mock server instead of the real MangaDex API. No Riverpod
-/// overrides are needed — the app runs exactly as it would in production.
+/// That script starts the mock server, runs widget tests + integration tests,
+/// and injects --dart-define=MOCK_BASE_URL so the app never calls the real
+/// MangaDex API.
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:integration_test/integration_test.dart';
@@ -14,6 +14,16 @@ import 'package:manga_portal/main.dart' as app;
 
 void main() {
   IntegrationTestWidgetsFlutterBinding.ensureInitialized();
+
+  setUpAll(() {
+    const url = String.fromEnvironment('MOCK_BASE_URL');
+    if (url.isEmpty) {
+      fail(
+        'Integration tests require a running mock server.\n'
+        'Run all tests with: dart run tool/run_integration_tests.dart',
+      );
+    }
+  });
 
   testWidgets('Library stub navigates to MangaDetailPage then to ReaderPage',
       (tester) async {
