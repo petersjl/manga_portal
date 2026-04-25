@@ -85,6 +85,20 @@ Future<void> _handle(HttpRequest req, int port, String hostIp) async {
       },
     });
     _writeJson(req.response, body);
+  } else if (path == '/manga') {
+    // Manga search — return two fake results.
+    final body = jsonEncode({
+      'result': 'ok',
+      'response': 'collection',
+      'data': [
+        _fakeMangaItem('mock-manga-1', 'Mock Manga One'),
+        _fakeMangaItem('mock-manga-2', 'Mock Manga Two'),
+      ],
+      'limit': 20,
+      'offset': 0,
+      'total': 2,
+    });
+    _writeJson(req.response, body);
   } else if (path.startsWith('/manga/') && path.endsWith('/feed')) {
     // Chapter feed — return two fake chapters in English.
     final mangaId = path.split('/')[2];
@@ -187,3 +201,20 @@ void _writeJson(HttpResponse response, String body) {
         .set(HttpHeaders.contentTypeHeader, 'application/json; charset=utf-8')
     ..write(body);
 }
+
+Map<String, dynamic> _fakeMangaItem(String id, String title) => {
+      'id': id,
+      'type': 'manga',
+      'attributes': {
+        'title': {'en': title},
+        'description': {'en': 'A fake manga description.'},
+        'status': 'ongoing',
+      },
+      'relationships': [
+        {
+          'id': 'cover-art-$id',
+          'type': 'cover_art',
+          'attributes': {'fileName': 'test-cover.jpg'},
+        }
+      ],
+    };

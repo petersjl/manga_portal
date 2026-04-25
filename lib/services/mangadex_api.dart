@@ -52,6 +52,29 @@ class MangaDexApiService {
         .toList();
   }
 
+  /// Searches manga by title. Returns up to [limit] results at [offset].
+  Future<List<Manga>> searchManga(
+    String query, {
+    int offset = 0,
+    int limit = 20,
+    List<String> contentRating = const ['safe', 'suggestive'],
+  }) async {
+    final response = await _dio.get<Map<String, dynamic>>(
+      '/manga',
+      queryParameters: {
+        'title': query,
+        'includes[]': 'cover_art',
+        'limit': limit,
+        'offset': offset,
+        'contentRating[]': contentRating,
+      },
+    );
+    final data = response.data!;
+    return (data['data'] as List)
+        .map((e) => Manga.fromListItem(e as Map<String, dynamic>))
+        .toList();
+  }
+
   /// Reports an image load outcome to the MangaDex@Home network.
   /// Only called when the [imageBaseUrl] does NOT contain 'mangadex.org'.
   Future<void> reportImageLoad({

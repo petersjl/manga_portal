@@ -127,23 +127,23 @@ The at-home server flow:
 
 ---
 
-## Feature 3 — Search Page 🚧 (In Progress)
+## Feature 3 — Search Page ✅
 
 **Goal**: Users can search for any manga by title and navigate to its detail page.
 
 ### Tasks
 
-- [ ] Add to `MangaDexApiService`:
+- [x] Add to `MangaDexApiService`:
   - `Future<List<Manga>> searchManga(String query, {int offset = 0, List<String> contentRating = const ['safe', 'suggestive']})` — `GET /manga?title=...&includes[]=cover_art&limit=20` with `contentRating[]` params
-- [ ] Add to `api_providers.dart`:
+- [x] Add to `api_providers.dart`:
   - `mangaSearchProvider(query)` — `AsyncNotifier` with debounce, supports pagination; reads `contentRating` from `settingsProvider`
-- [ ] Implement `lib/pages/search_page.dart`:
+- [x] Implement `lib/pages/search_page.dart`:
   - Search `TextField` at top
   - Debounced search (300ms) on text change
   - Scrollable grid of `MangaCard` widgets
   - Loading indicator, empty state, error state
   - Tap card → `context.push('/manga/:mangaId')`
-- [ ] Remove `Placeholder` from `SearchPage`
+- [x] Remove `Placeholder` from `SearchPage`
 
 ### Tests
 
@@ -154,9 +154,11 @@ The at-home server flow:
 - Integration test: `integration_test/search_flow_test.dart`
   - Type query → results appear → tap card → detail page loads
 
+_All tasks and tests complete. Verified on emulator: real MangaDex search returns results, covers load, tapping a card navigates to the detail page._
+
 ---
 
-## Feature 4 — Reading Progress & Reader Polish
+## Feature 4 — Reading Progress & Reader Polish 🚧 (In Progress)
 
 **Goal**: The reader remembers where you left off per chapter. Quality modes and reading direction are configurable. MangaDex@Home reporting is fully compliant.
 

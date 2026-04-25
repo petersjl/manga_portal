@@ -5,6 +5,7 @@ import '../models/chapter.dart';
 import '../models/chapter_pages.dart';
 import '../models/manga.dart';
 import '../services/mangadex_api.dart';
+import 'settings_provider.dart';
 
 part 'api_providers.g.dart';
 
@@ -47,4 +48,88 @@ Future<List<Chapter>> chapterFeed(Ref ref, String mangaId) async {
   }
 
   return allChapters;
+}
+
+/// Search state — holds the query and paginated results.
+class MangaSearchState {
+  const MangaSearchState({
+    this.query = '',
+    this.results = const [],
+    this.isLoadingMore = false,
+    this.hasMore = true,
+  });
+
+  final String query;
+  final List<Manga> results;
+  final bool isLoadingMore;
+  final bool hasMore;
+
+  MangaSearchState copyWith({
+    String? query,
+    List<Manga>? results,
+    bool? isLoadingMore,
+    bool? hasMore,
+  }) =>
+      MangaSearchState(
+        query: query ?? this.query,
+        results: results ?? this.results,
+        isLoadingMore: isLoadingMore ?? this.isLoadingMore,
+        hasMore: hasMore ?? this.hasMore,
+      );
+}
+
+@riverpod
+class MangaSearch extends _$MangaSearch {
+  static const _pageSize = 20;
+
+  @override
+  Future<MangaSearchState> build() async => const MangaSearchState();
+
+  Future<void> search(String query) async {
+    final trimmed = query.trim();
+    if (trimmed.isEmpty) {
+      state = const AsyncData(MangaSearchState());
+      return;
+    }
+
+    state = const AsyncLoading();
+
+    final settings = ref.read(settingsNotifierProvider);
+    try {
+      final results = await ref.read(mangaDexApiServiceProvider).searchManga(
+            trimmed,
+            contentRating: settings.contentRating,
+          );
+      state = AsyncData(MangaSearchState(
+        query: trimmed,
+        results: results,
+        hasMore: results.length == _pageSize,
+      ));
+    } catch (e, st) {
+      state = AsyncError(e, st);
+    }
+  }
+
+  Future<void> loadMore() async {
+    final current = state.valueOrNull;
+    if (current == null || current.isLoadingMore || !current.hasMore) return;
+
+    state = AsyncData(current.copyWith(isLoadingMore: true));
+
+    final settings = ref.read(settingsNotifierProvider);
+    try {
+      final more = await ref.read(mangaDexApiServiceProvider).searchManga(
+            current.query,
+            offset: current.results.length,
+            contentRating: settings.contentRating,
+          );
+      state = AsyncData(current.copyWith(
+        results: [...current.results, ...more],
+        isLoadingMore: false,
+        hasMore: more.length == _pageSize,
+      ));
+    } catch (_) {
+      state = AsyncData(current.copyWith(isLoadingMore: false));
+    }
+  }
 }

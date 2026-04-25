@@ -306,7 +306,7 @@ class _MangaProviderElement extends AutoDisposeFutureProviderElement<Manga>
   String get mangaId => (origin as MangaProvider).mangaId;
 }
 
-String _$chapterFeedHash() => r'7e26a5eabb0073e19cccb33103c4c41cd17b2505';
+String _$chapterFeedHash() => r'89993c8f0e0853c22df51cb42819d7645f2b426b';
 
 /// Fetches all chapters for [mangaId], paginating internally (max 500/request).
 /// Chapters are returned in API order (ascending by chapter number).
@@ -454,5 +454,21 @@ class _ChapterFeedProviderElement
   @override
   String get mangaId => (origin as ChapterFeedProvider).mangaId;
 }
+
+String _$mangaSearchHash() => r'b2a7521e593a96336d21374dc66ad4e494b13a2b';
+
+/// See also [MangaSearch].
+@ProviderFor(MangaSearch)
+final mangaSearchProvider =
+    AutoDisposeAsyncNotifierProvider<MangaSearch, MangaSearchState>.internal(
+  MangaSearch.new,
+  name: r'mangaSearchProvider',
+  debugGetCreateSourceHash:
+      const bool.fromEnvironment('dart.vm.product') ? null : _$mangaSearchHash,
+  dependencies: null,
+  allTransitiveDependencies: null,
+);
+
+typedef _$MangaSearch = AutoDisposeAsyncNotifier<MangaSearchState>;
 // ignore_for_file: type=lint
 // ignore_for_file: subtype_of_sealed_class, invalid_use_of_internal_member, invalid_use_of_visible_for_testing_member, deprecated_member_use_from_same_package

@@ -60,6 +60,14 @@ class Manga {
 
   factory Manga.fromJson(Map<String, dynamic> json) {
     final data = json['data'] as Map<String, dynamic>;
+    return Manga._fromData(data);
+  }
+
+  /// Parses a single item from a collection response (no `data` envelope).
+  factory Manga.fromListItem(Map<String, dynamic> item) =>
+      Manga._fromData(item);
+
+  factory Manga._fromData(Map<String, dynamic> data) {
     final relationships = (data['relationships'] as List<dynamic>?)
             ?.cast<Map<String, dynamic>>() ??
         [];
