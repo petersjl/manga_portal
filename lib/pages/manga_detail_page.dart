@@ -52,7 +52,7 @@ class MangaDetailPage extends ConsumerWidget {
                 chapters: chapters,
                 preferredLanguage: settings.preferredLanguage,
                 onChapterSelected: (chapterId) =>
-                    context.push('/reader/$chapterId'),
+                    context.push('/reader/$chapterId?mangaId=$mangaId'),
               ),
             ),
           ],

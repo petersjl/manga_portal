@@ -25,6 +25,26 @@ final mangaDexApiServiceProvider =
 @Deprecated('Will be removed in 3.0. Use Ref instead')
 // ignore: unused_element
 typedef MangaDexApiServiceRef = AutoDisposeProviderRef<MangaDexApiService>;
+String _$localProgressServiceHash() =>
+    r'046b04f3ea6b625f25d2c3a42a5e471ab86daa2f';
+
+/// See also [localProgressService].
+@ProviderFor(localProgressService)
+final localProgressServiceProvider =
+    AutoDisposeFutureProvider<LocalProgressService>.internal(
+  localProgressService,
+  name: r'localProgressServiceProvider',
+  debugGetCreateSourceHash: const bool.fromEnvironment('dart.vm.product')
+      ? null
+      : _$localProgressServiceHash,
+  dependencies: null,
+  allTransitiveDependencies: null,
+);
+
+@Deprecated('Will be removed in 3.0. Use Ref instead')
+// ignore: unused_element
+typedef LocalProgressServiceRef
+    = AutoDisposeFutureProviderRef<LocalProgressService>;
 String _$atHomeServerHash() => r'90bb36633d7153db3f323e600977eb8f754f4e39';
 
 /// Copied from Dart SDK

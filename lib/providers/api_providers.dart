@@ -1,9 +1,11 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import '../models/chapter.dart';
 import '../models/chapter_pages.dart';
 import '../models/manga.dart';
+import '../services/local_progress.dart';
 import '../services/mangadex_api.dart';
 import 'settings_provider.dart';
 
@@ -17,6 +19,12 @@ MangaDexApiService mangaDexApiService(Ref ref) {
   return MangaDexApiService(
     baseUrl: mockBaseUrl.isEmpty ? null : mockBaseUrl,
   );
+}
+
+@riverpod
+Future<LocalProgressService> localProgressService(Ref ref) async {
+  final prefs = await SharedPreferences.getInstance();
+  return LocalProgressService(prefs);
 }
 
 @riverpod

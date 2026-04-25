@@ -75,13 +75,27 @@ Future<void> _handle(HttpRequest req, int port, String hostIp) async {
   if (path.startsWith('/at-home/server/')) {
     // Return a fake at-home server response.
     // baseUrl points back at this server so all image requests come here too.
+    // Returns 5 pages so integration tests can navigate to a mid-chapter page.
+    final chapterId = path.split('/').last;
     final body = jsonEncode({
       'result': 'ok',
       'baseUrl': 'http://$hostIp:$port',
       'chapter': {
-        'hash': 'testhash',
-        'data': ['page1.jpg', 'page2.jpg'],
-        'dataSaver': ['page1.jpg', 'page2.jpg'],
+        'hash': 'testhash-$chapterId',
+        'data': [
+          'page1.jpg',
+          'page2.jpg',
+          'page3.jpg',
+          'page4.jpg',
+          'page5.jpg'
+        ],
+        'dataSaver': [
+          'page1.jpg',
+          'page2.jpg',
+          'page3.jpg',
+          'page4.jpg',
+          'page5.jpg'
+        ],
       },
     });
     _writeJson(req.response, body);

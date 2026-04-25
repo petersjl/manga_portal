@@ -50,7 +50,8 @@ final goRouter = GoRouter(
       name: 'reader',
       builder: (context, state) {
         final chapterId = state.pathParameters['chapterId']!;
-        return ReaderPage(chapterId: chapterId);
+        final mangaId = state.uri.queryParameters['mangaId'];
+        return ReaderPage(chapterId: chapterId, mangaId: mangaId);
       },
     ),
   ],
