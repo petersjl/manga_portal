@@ -25,7 +25,8 @@ final imageQualityProvider = AutoDisposeProvider<String>.internal(
 @Deprecated('Will be removed in 3.0. Use Ref instead')
 // ignore: unused_element
 typedef ImageQualityRef = AutoDisposeProviderRef<String>;
-String _$readerModeHash() => r'dc4392b8a3710fc9a9ce2d044e733473b520f97d';
+String _$readingModeNotifierHash() =>
+    r'a6c1d3c391ca954bf9be4bbf5a02859c2e2e5044';
 
 /// Copied from Dart SDK
 class _SystemHash {
@@ -48,47 +49,52 @@ class _SystemHash {
   }
 }
 
-/// Reading mode for a specific manga — 'paged' or 'scroll'.
-/// Vertical scroll mode is implemented in Feature 7; this always returns
-/// 'paged' until then. The provider is parameterised per-manga now so
-/// Feature 7 can persist per-manga preferences without an API change.
-///
-/// Copied from [readerMode].
-@ProviderFor(readerMode)
-const readerModeProvider = ReaderModeFamily();
+abstract class _$ReadingModeNotifier
+    extends BuildlessAutoDisposeNotifier<String> {
+  late final String mangaId;
 
-/// Reading mode for a specific manga — 'paged' or 'scroll'.
-/// Vertical scroll mode is implemented in Feature 7; this always returns
-/// 'paged' until then. The provider is parameterised per-manga now so
-/// Feature 7 can persist per-manga preferences without an API change.
-///
-/// Copied from [readerMode].
-class ReaderModeFamily extends Family<String> {
-  /// Reading mode for a specific manga — 'paged' or 'scroll'.
-  /// Vertical scroll mode is implemented in Feature 7; this always returns
-  /// 'paged' until then. The provider is parameterised per-manga now so
-  /// Feature 7 can persist per-manga preferences without an API change.
-  ///
-  /// Copied from [readerMode].
-  const ReaderModeFamily();
+  String build(
+    String mangaId,
+  );
+}
 
-  /// Reading mode for a specific manga — 'paged' or 'scroll'.
-  /// Vertical scroll mode is implemented in Feature 7; this always returns
-  /// 'paged' until then. The provider is parameterised per-manga now so
-  /// Feature 7 can persist per-manga preferences without an API change.
+/// Persists and exposes the reading mode ('paged' or 'scroll') for a specific
+/// manga. Defaults to 'paged' on first use. Persisted to LocalProgressService
+/// so the preference survives app restarts.
+///
+/// Copied from [ReadingModeNotifier].
+@ProviderFor(ReadingModeNotifier)
+const readingModeNotifierProvider = ReadingModeNotifierFamily();
+
+/// Persists and exposes the reading mode ('paged' or 'scroll') for a specific
+/// manga. Defaults to 'paged' on first use. Persisted to LocalProgressService
+/// so the preference survives app restarts.
+///
+/// Copied from [ReadingModeNotifier].
+class ReadingModeNotifierFamily extends Family<String> {
+  /// Persists and exposes the reading mode ('paged' or 'scroll') for a specific
+  /// manga. Defaults to 'paged' on first use. Persisted to LocalProgressService
+  /// so the preference survives app restarts.
   ///
-  /// Copied from [readerMode].
-  ReaderModeProvider call(
+  /// Copied from [ReadingModeNotifier].
+  const ReadingModeNotifierFamily();
+
+  /// Persists and exposes the reading mode ('paged' or 'scroll') for a specific
+  /// manga. Defaults to 'paged' on first use. Persisted to LocalProgressService
+  /// so the preference survives app restarts.
+  ///
+  /// Copied from [ReadingModeNotifier].
+  ReadingModeNotifierProvider call(
     String mangaId,
   ) {
-    return ReaderModeProvider(
+    return ReadingModeNotifierProvider(
       mangaId,
     );
   }
 
   @override
-  ReaderModeProvider getProviderOverride(
-    covariant ReaderModeProvider provider,
+  ReadingModeNotifierProvider getProviderOverride(
+    covariant ReadingModeNotifierProvider provider,
   ) {
     return call(
       provider.mangaId,
@@ -107,42 +113,38 @@ class ReaderModeFamily extends Family<String> {
       _allTransitiveDependencies;
 
   @override
-  String? get name => r'readerModeProvider';
+  String? get name => r'readingModeNotifierProvider';
 }
 
-/// Reading mode for a specific manga — 'paged' or 'scroll'.
-/// Vertical scroll mode is implemented in Feature 7; this always returns
-/// 'paged' until then. The provider is parameterised per-manga now so
-/// Feature 7 can persist per-manga preferences without an API change.
+/// Persists and exposes the reading mode ('paged' or 'scroll') for a specific
+/// manga. Defaults to 'paged' on first use. Persisted to LocalProgressService
+/// so the preference survives app restarts.
 ///
-/// Copied from [readerMode].
-class ReaderModeProvider extends AutoDisposeProvider<String> {
-  /// Reading mode for a specific manga — 'paged' or 'scroll'.
-  /// Vertical scroll mode is implemented in Feature 7; this always returns
-  /// 'paged' until then. The provider is parameterised per-manga now so
-  /// Feature 7 can persist per-manga preferences without an API change.
+/// Copied from [ReadingModeNotifier].
+class ReadingModeNotifierProvider
+    extends AutoDisposeNotifierProviderImpl<ReadingModeNotifier, String> {
+  /// Persists and exposes the reading mode ('paged' or 'scroll') for a specific
+  /// manga. Defaults to 'paged' on first use. Persisted to LocalProgressService
+  /// so the preference survives app restarts.
   ///
-  /// Copied from [readerMode].
-  ReaderModeProvider(
+  /// Copied from [ReadingModeNotifier].
+  ReadingModeNotifierProvider(
     String mangaId,
   ) : this._internal(
-          (ref) => readerMode(
-            ref as ReaderModeRef,
-            mangaId,
-          ),
-          from: readerModeProvider,
-          name: r'readerModeProvider',
+          () => ReadingModeNotifier()..mangaId = mangaId,
+          from: readingModeNotifierProvider,
+          name: r'readingModeNotifierProvider',
           debugGetCreateSourceHash:
               const bool.fromEnvironment('dart.vm.product')
                   ? null
-                  : _$readerModeHash,
-          dependencies: ReaderModeFamily._dependencies,
+                  : _$readingModeNotifierHash,
+          dependencies: ReadingModeNotifierFamily._dependencies,
           allTransitiveDependencies:
-              ReaderModeFamily._allTransitiveDependencies,
+              ReadingModeNotifierFamily._allTransitiveDependencies,
           mangaId: mangaId,
         );
 
-  ReaderModeProvider._internal(
+  ReadingModeNotifierProvider._internal(
     super._createNotifier, {
     required super.name,
     required super.dependencies,
@@ -155,13 +157,20 @@ class ReaderModeProvider extends AutoDisposeProvider<String> {
   final String mangaId;
 
   @override
-  Override overrideWith(
-    String Function(ReaderModeRef provider) create,
+  String runNotifierBuild(
+    covariant ReadingModeNotifier notifier,
   ) {
+    return notifier.build(
+      mangaId,
+    );
+  }
+
+  @override
+  Override overrideWith(ReadingModeNotifier Function() create) {
     return ProviderOverride(
       origin: this,
-      override: ReaderModeProvider._internal(
-        (ref) => create(ref as ReaderModeRef),
+      override: ReadingModeNotifierProvider._internal(
+        () => create()..mangaId = mangaId,
         from: from,
         name: null,
         dependencies: null,
@@ -173,13 +182,14 @@ class ReaderModeProvider extends AutoDisposeProvider<String> {
   }
 
   @override
-  AutoDisposeProviderElement<String> createElement() {
-    return _ReaderModeProviderElement(this);
+  AutoDisposeNotifierProviderElement<ReadingModeNotifier, String>
+      createElement() {
+    return _ReadingModeNotifierProviderElement(this);
   }
 
   @override
   bool operator ==(Object other) {
-    return other is ReaderModeProvider && other.mangaId == mangaId;
+    return other is ReadingModeNotifierProvider && other.mangaId == mangaId;
   }
 
   @override
@@ -193,17 +203,18 @@ class ReaderModeProvider extends AutoDisposeProvider<String> {
 
 @Deprecated('Will be removed in 3.0. Use Ref instead')
 // ignore: unused_element
-mixin ReaderModeRef on AutoDisposeProviderRef<String> {
+mixin ReadingModeNotifierRef on AutoDisposeNotifierProviderRef<String> {
   /// The parameter `mangaId` of this provider.
   String get mangaId;
 }
 
-class _ReaderModeProviderElement extends AutoDisposeProviderElement<String>
-    with ReaderModeRef {
-  _ReaderModeProviderElement(super.provider);
+class _ReadingModeNotifierProviderElement
+    extends AutoDisposeNotifierProviderElement<ReadingModeNotifier, String>
+    with ReadingModeNotifierRef {
+  _ReadingModeNotifierProviderElement(super.provider);
 
   @override
-  String get mangaId => (origin as ReaderModeProvider).mangaId;
+  String get mangaId => (origin as ReadingModeNotifierProvider).mangaId;
 }
 // ignore_for_file: type=lint
 // ignore_for_file: subtype_of_sealed_class, invalid_use_of_internal_member, invalid_use_of_visible_for_testing_member, deprecated_member_use_from_same_package

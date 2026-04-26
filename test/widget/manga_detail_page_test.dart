@@ -3,10 +3,12 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:manga_portal/models/chapter.dart';
 import 'package:manga_portal/models/manga.dart';
 import 'package:manga_portal/pages/manga_detail_page.dart';
 import 'package:manga_portal/providers/api_providers.dart';
+import 'package:manga_portal/services/local_progress.dart';
 
 // ── Fake data ─────────────────────────────────────────────────────────────────
 
@@ -48,8 +50,16 @@ final _fakeChapters = [
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
 Widget _buildApp(List<Override> overrides) {
+  SharedPreferences.setMockInitialValues({});
   return ProviderScope(
-    overrides: overrides,
+    overrides: [
+      // Provide a real (empty) LocalProgressService so _ReadingModeSelector
+      // and progress tracking work without making real SharedPreferences calls.
+      localProgressServiceProvider.overrideWith((ref) async {
+        return LocalProgressService(await SharedPreferences.getInstance());
+      }),
+      ...overrides,
+    ],
     child: const MaterialApp(
       home: MangaDetailPage(mangaId: 'test-manga-id'),
     ),
@@ -60,8 +70,10 @@ Widget _buildApp(List<Override> overrides) {
 /// pumpAndSettle (which hangs if image providers are in-flight).
 Future<void> _pumpAfterLoad(WidgetTester tester) async {
   await tester.pump(); // Start provider futures.
-  await tester.pump(const Duration(milliseconds: 50)); // Resolve futures.
-  await tester.pump(); // Rebuild with data.
+  await tester.pump(const Duration(milliseconds: 100)); // Resolve futures.
+  for (var i = 0; i < 4; i++) {
+    await tester.pump(); // Process post-frame callbacks and rebuilds.
+  }
 }
 
 // ── Tests ─────────────────────────────────────────────────────────────────────
@@ -99,8 +111,11 @@ void main() {
 
       expect(find.text('Test Manga'), findsAtLeastNWidgets(1));
       expect(find.text('A test description.'), findsOneWidget);
-      // Chapters are displayed descending by number.
+      // Chapters are displayed descending by number. Ch. 2 should be above the
+      // fold; Ch. 1 may be just below — drag the scroll view to bring it in.
       expect(find.text('Ch. 2'), findsOneWidget);
+      await tester.drag(find.byType(CustomScrollView), const Offset(0, -200));
+      await tester.pump();
       expect(find.text('Ch. 1'), findsOneWidget);
     });
 
@@ -207,6 +222,9 @@ void main() {
       await _pumpAfterLoad(tester);
 
       expect(find.textContaining('2 translations'), findsOneWidget);
+      // Scroll to ensure the chip is in the visible viewport before tapping.
+      await tester.ensureVisible(find.textContaining('2 translations'));
+      await tester.pumpAndSettle();
       // Tap to expand.
       await tester.tap(find.textContaining('2 translations'));
       await tester.pump();

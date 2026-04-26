@@ -1,6 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
+import 'api_providers.dart';
 import 'settings_provider.dart';
 
 part 'reader_provider.g.dart';
@@ -12,11 +13,33 @@ String imageQuality(Ref ref) {
   return ref.watch(settingsNotifierProvider).imageQuality;
 }
 
-/// Reading mode for a specific manga — 'paged' or 'scroll'.
-/// Vertical scroll mode is implemented in Feature 7; this always returns
-/// 'paged' until then. The provider is parameterised per-manga now so
-/// Feature 7 can persist per-manga preferences without an API change.
+/// Persists and exposes the reading mode ('paged' or 'scroll') for a specific
+/// manga. Defaults to 'paged' on first use. Persisted to LocalProgressService
+/// so the preference survives app restarts.
 @riverpod
-String readerMode(Ref ref, String mangaId) {
-  return 'paged';
+class ReadingModeNotifier extends _$ReadingModeNotifier {
+  @override
+  String build(String mangaId) {
+    // Load persisted mode asynchronously and update state when ready.
+    ref.read(localProgressServiceProvider.future).then((service) {
+      try {
+        final mode = service.getReadingMode(mangaId);
+        if (mode != state) state = mode;
+      } catch (_) {
+        // Provider disposed before load completed — ignore.
+      }
+    });
+    return 'paged';
+  }
+
+  /// Persists and applies [mode] ('paged' or 'scroll').
+  Future<void> setMode(String mode) async {
+    assert(mode == 'paged' || mode == 'scroll');
+    state = mode;
+    final service = await ref.read(localProgressServiceProvider.future);
+    service.saveReadingMode(mangaId, mode);
+  }
+
+  /// Toggles between 'paged' and 'scroll'.
+  Future<void> toggle() => setMode(state == 'paged' ? 'scroll' : 'paged');
 }

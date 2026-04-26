@@ -293,21 +293,21 @@ _All tasks and tests complete. Verified on emulator: real MangaDex search return
 
 ---
 
-## Feature 7 — Vertical Scroll (Webtoon) Mode 🚧 (In Progress)
+## Feature 7 — Vertical Scroll (Webtoon) Mode ✅
 
 **Goal**: Support vertical continuous scroll in addition to horizontal paged reading. Users set a preferred mode per series (stored locally).
 
 ### Tasks
 
-- [ ] Add per-manga reading direction to `LocalProgressService`:
+- [x] Add per-manga reading direction to `LocalProgressService`:
   - `saveReadingMode(mangaId, ReadingMode mode)`
   - `getReadingMode(mangaId)` → `ReadingMode` (defaults to paged)
-- [ ] Update `ReaderPage`:
+- [x] Update `ReaderPage`:
   - Check `readingModeProvider(mangaId)` on load
   - Paged mode: `PageView` (existing)
   - Vertical mode: `ListView` of `ReaderPageImage` widgets; track visible page for progress saving
-- [ ] Add reading mode toggle button in reader app bar
-- [ ] Add reading mode selector on `MangaDetailPage` (sets default for that series)
+- [x] Add reading mode toggle button in reader app bar
+- [x] Add reading mode selector on `MangaDetailPage` (sets default for that series)
 
 ### Tests
 
@@ -317,6 +317,13 @@ _All tasks and tests complete. Verified on emulator: real MangaDex search return
   - Mode toggle switches between them
 - Integration test: `integration_test/reader_modes_flow_test.dart`
   - Set vertical mode on detail page → open reader → scrolls vertically
+
+### Extras
+
+- `ReadingModeNotifier` is a sync `Notifier<String>` that returns `'paged'` immediately and asynchronously loads the persisted preference in `build()` — no loading spinner for mode state.
+- Scroll mode tracks reading progress via a `ScrollController` listener, estimating the current page from scroll fraction and marking the chapter read when 95% scrolled.
+- A 70%-screen-height footer slot in scroll mode acts as the chapter transition interstitial, keeping the scroll-to-next-chapter flow consistent with paged mode.
+- Storage key `reading_mode_{mangaId}` is intentionally excluded from `clearAllProgress()` — reading mode is a preference, not history.
 
 ---
 
@@ -352,7 +359,7 @@ _All tasks and tests complete. Verified on emulator: real MangaDex search return
 
 ---
 
-## Feature 8 — MangaDex Authentication (Deferred)
+## Feature 8 — MangaDex Authentication (Deferred) 🚧 (In Progress)
 
 **Status**: Blocked — MangaDex public OAuth clients are not available as of April 2026. Personal clients only work for the owning account.
 

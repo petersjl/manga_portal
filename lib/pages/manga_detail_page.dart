@@ -10,6 +10,7 @@ import '../models/chapter.dart';
 import '../models/manga.dart';
 import '../providers/api_providers.dart';
 import '../providers/library_provider.dart';
+import '../providers/reader_provider.dart';
 import '../providers/settings_provider.dart';
 import '../widgets/chapter_list_tile.dart';
 
@@ -101,6 +102,7 @@ class MangaDetailPage extends ConsumerWidget {
           slivers: [
             _MangaCover(manga: manga),
             _MangaInfo(manga: manga, locale: settings.preferredLanguage),
+            _ReadingModeSelector(mangaId: mangaId),
             if (actionChapter != null)
               _ReadingButton(
                 chapter: actionChapter,
@@ -275,6 +277,55 @@ class _MangaInfoState extends State<_MangaInfo> {
                 ],
               ),
             ],
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+// ── Reading mode selector ─────────────────────────────────────────────────────
+
+class _ReadingModeSelector extends ConsumerWidget {
+  const _ReadingModeSelector({required this.mangaId});
+
+  final String mangaId;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final mode = ref.watch(readingModeNotifierProvider(mangaId));
+
+    return SliverToBoxAdapter(
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(16, 4, 16, 8),
+        child: Row(
+          children: [
+            Text(
+              'Reading mode',
+              style: Theme.of(context).textTheme.labelLarge,
+            ),
+            const Spacer(),
+            SegmentedButton<String>(
+              segments: const [
+                ButtonSegment(
+                  value: 'paged',
+                  icon: Icon(Icons.auto_stories, size: 18),
+                  label: Text('Paged'),
+                ),
+                ButtonSegment(
+                  value: 'scroll',
+                  icon: Icon(Icons.view_agenda, size: 18),
+                  label: Text('Scroll'),
+                ),
+              ],
+              selected: {mode},
+              onSelectionChanged: (selection) => ref
+                  .read(readingModeNotifierProvider(mangaId).notifier)
+                  .setMode(selection.first),
+              style: SegmentedButton.styleFrom(
+                visualDensity: VisualDensity.compact,
+              ),
+            ),
           ],
         ),
       ),

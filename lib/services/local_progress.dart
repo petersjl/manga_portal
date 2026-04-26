@@ -46,7 +46,19 @@ class LocalProgressService {
     return (_prefs.getStringList('read_chapters_$mangaId') ?? []).toSet();
   }
 
+  /// Saves the preferred reading mode for [mangaId].
+  /// [mode] must be either 'paged' or 'scroll'.
+  void saveReadingMode(String mangaId, String mode) {
+    _prefs.setString('reading_mode_$mangaId', mode);
+  }
+
+  /// Returns the saved reading mode for [mangaId], defaulting to 'paged'.
+  String getReadingMode(String mangaId) {
+    return _prefs.getString('reading_mode_$mangaId') ?? 'paged';
+  }
+
   /// Removes all reading progress and read-chapter history from the device.
+  /// Reading modes are intentionally preserved (they are a preference, not history).
   Future<void> clearAllProgress() async {
     final keys = _prefs.getKeys().where(
           (k) => k.startsWith('progress_') || k.startsWith('read_chapters_'),

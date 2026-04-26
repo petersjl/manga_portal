@@ -69,16 +69,26 @@ class _ReaderPageState extends ConsumerState<ReaderPage> {
   // brief at-home refresh (prevents scroll-position reset on reload).
   AtHomeServer? _lastServer;
 
+  // ── Scroll mode (vertical / webtoon) ──────────────────────────────────────
+
+  // ScrollController for vertical scroll mode.
+  ScrollController _scrollController = ScrollController();
+
+  // Set to true once the chapter has been marked as fully read in scroll mode.
+  bool _scrollModeChapterRead = false;
+
   // ── Lifecycle ──────────────────────────────────────────────────────────────
 
   @override
   void initState() {
     super.initState();
     _currentChapterId = widget.chapterId;
+    _scrollController.addListener(_onScrollChanged);
   }
 
   @override
   void dispose() {
+    _scrollController.dispose();
     _pageController.dispose();
     super.dispose();
   }
@@ -93,6 +103,12 @@ class _ReaderPageState extends ConsumerState<ReaderPage> {
     _loadGeneration++;
     _pageController.dispose();
     _pageController = PageController(initialPage: 1 + initialMangaPage);
+    // Reset scroll controller for scroll mode chapter transitions.
+    _scrollController.removeListener(_onScrollChanged);
+    _scrollController.dispose();
+    _scrollController = ScrollController();
+    _scrollController.addListener(_onScrollChanged);
+    _scrollModeChapterRead = false;
     // Pressing a transition button is an explicit intent to start reading the
     // new chapter, so immediately record it as in-progress without waiting for
     // the user to swipe past page 0.
@@ -228,6 +244,36 @@ class _ReaderPageState extends ConsumerState<ReaderPage> {
     }
   }
 
+  // ── Scroll mode progress tracking ──────────────────────────────────────────
+
+  void _onScrollChanged() {
+    if (!_scrollController.hasClients) return;
+    final maxExtent = _scrollController.position.maxScrollExtent;
+    if (maxExtent <= 0) return;
+
+    final server = _lastServer;
+    if (server == null) return;
+    final dataSaver = ref.read(imageQualityProvider) == 'data-saver';
+    final pages = dataSaver ? server.chapter.dataSaver : server.chapter.data;
+    if (pages.isEmpty) return;
+
+    final fraction = _scrollController.offset / maxExtent;
+    final estimatedPage =
+        (fraction * (pages.length - 1)).round().clamp(0, pages.length - 1);
+
+    if (estimatedPage != _currentMangaPage) {
+      setState(() => _currentMangaPage = estimatedPage);
+      if (estimatedPage > 0) _hasUserPaged = true;
+      if (_hasUserPaged) _saveProgress(estimatedPage);
+    }
+
+    // Mark chapter as read when the user has scrolled through ~95% of it.
+    if (!_scrollModeChapterRead && fraction >= 0.95) {
+      _scrollModeChapterRead = true;
+      _markCurrentChapterRead();
+    }
+  }
+
   void _onImageLoadFailure() {
     // Allow only one server refresh per chapter load to avoid an infinite
     // failure→invalidate loop (e.g. in tests or when the CDN node is down).
@@ -300,6 +346,12 @@ class _ReaderPageState extends ConsumerState<ReaderPage> {
 
     final settings = ref.watch(settingsNotifierProvider);
 
+    // Read the per-manga reading mode; fall back to 'paged' when no mangaId.
+    final readingMode = widget.mangaId != null
+        ? ref.watch(readingModeNotifierProvider(widget.mangaId!))
+        : 'paged';
+    final isScrollMode = readingMode == 'scroll';
+
     return Scaffold(
       backgroundColor: Colors.black,
       appBar: AppBar(
@@ -314,14 +366,29 @@ class _ReaderPageState extends ConsumerState<ReaderPage> {
           },
           orElse: () => const SizedBox.shrink(),
         ),
+        actions: [
+          if (widget.mangaId != null)
+            IconButton(
+              icon: Icon(isScrollMode ? Icons.auto_stories : Icons.view_agenda),
+              tooltip: isScrollMode
+                  ? 'Switch to paged mode'
+                  : 'Switch to scroll mode',
+              onPressed: () => ref
+                  .read(readingModeNotifierProvider(widget.mangaId!).notifier)
+                  .toggle(),
+            ),
+        ],
       ),
       body: serverAsync.when(
         loading: () {
-          // Keep the PageView visible during a server URL refresh so the
-          // scroll position isn't lost. Only show the spinner on first load.
+          // Keep the reader content visible during a server URL refresh so the
+          // scroll/page position isn't lost. Only show the spinner on first load.
           if (_lastServer case final server?) {
-            return _buildPageViewContent(
-                server, dataSaver, chaptersAsync, settings);
+            return isScrollMode
+                ? _buildScrollContent(
+                    server, dataSaver, chaptersAsync, settings)
+                : _buildPageViewContent(
+                    server, dataSaver, chaptersAsync, settings);
           }
           return const Center(
               child: CircularProgressIndicator(color: Colors.white));
@@ -351,10 +418,59 @@ class _ReaderPageState extends ConsumerState<ReaderPage> {
         ),
         data: (server) {
           _lastServer = server;
-          return _buildPageViewContent(
-              server, dataSaver, chaptersAsync, settings);
+          return isScrollMode
+              ? _buildScrollContent(server, dataSaver, chaptersAsync, settings)
+              : _buildPageViewContent(
+                  server, dataSaver, chaptersAsync, settings);
         },
       ),
+    );
+  }
+
+  // ── Scroll (webtoon) mode ──────────────────────────────────────────────────
+
+  Widget _buildScrollContent(
+    AtHomeServer server,
+    bool dataSaver,
+    AsyncValue<List<Chapter>> chaptersAsync,
+    Settings settings,
+  ) {
+    final pages = dataSaver ? server.chapter.dataSaver : server.chapter.data;
+
+    // Once per chapter load: kick off background preloading from page 0.
+    if (!_initialPreloadDone) {
+      _initialPreloadDone = true;
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) _startPreload(0, server);
+      });
+    }
+
+    return ListView.builder(
+      controller: _scrollController,
+      // Preload 4 screen-heights worth of content so the user never sees a
+      // loading spinner during normal scroll speed.
+      cacheExtent: MediaQuery.of(context).size.height * 4,
+      itemCount: pages.length + 1, // +1 for the end-of-chapter footer
+      itemBuilder: (context, index) {
+        if (index < pages.length) {
+          return ReaderPageImage(
+            key: ValueKey('${_currentChapterId}_scroll_$index'),
+            url: server.pageUrl(pages[index], dataSaver: dataSaver),
+            isThirdParty: server.isThirdParty,
+            apiService: ref.read(mangaDexApiServiceProvider),
+            onLoadFailure: _onImageLoadFailure,
+          );
+        }
+        // Footer: end-of-chapter navigation (same content as paged transitions).
+        return SizedBox(
+          height: MediaQuery.of(context).size.height * 0.7,
+          child: _buildTransitionSlot(
+            isNext: true,
+            chaptersAsync: chaptersAsync,
+            preferredLanguage: settings.preferredLanguage,
+          ),
+        );
+      },
     );
   }
 
