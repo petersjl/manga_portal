@@ -1,14 +1,7 @@
-/// Integration test for the reader flow.
-///
-/// Requires the host-side mock server. Run via:
-///   dart run tool/run_integration_tests.dart
-///
-/// That script starts the mock server, runs widget tests + integration tests,
-/// and injects --dart-define=MOCK_BASE_URL so the app never calls the real
-/// MangaDex API.
-
+import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:integration_test/integration_test.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import 'package:manga_portal/main.dart' as app;
 
@@ -25,19 +18,29 @@ void main() {
     }
   });
 
-  testWidgets('Library stub navigates to MangaDetailPage then to ReaderPage',
+  setUp(() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.clear();
+  });
+
+  testWidgets('navigates from Search to MangaDetailPage then to ReaderPage',
       (tester) async {
     app.main();
     await tester.pumpAndSettle();
 
-    // ── Library page ────────────────────────────────────────────────────────
-    expect(find.text('Open Manga Detail (test)'), findsOneWidget);
-
-    // Navigate to manga detail page.
-    await tester.tap(find.text('Open Manga Detail (test)'));
+    // ── Search tab ───────────────────────────────────────────────────────────
+    await tester.tap(find.text('Search'));
     await tester.pumpAndSettle();
 
-    // ── Manga detail page ───────────────────────────────────────────────────
+    await tester.enterText(find.byType(SearchBar), 'mock');
+    await tester.pump(const Duration(milliseconds: 400));
+    await tester.pumpAndSettle();
+
+    // Tap the first search result to navigate to the detail page.
+    await tester.tap(find.text('Mock Manga One'));
+    await tester.pumpAndSettle();
+
+    // ── Manga detail page ────────────────────────────────────────────────────
     // The mock server returns a manga named "Mock Manga Title".
     expect(find.text('Mock Manga Title'), findsAtLeastNWidgets(1));
 
@@ -49,7 +52,7 @@ void main() {
     await tester.tap(find.text('Ch. 2'));
     await tester.pumpAndSettle();
 
-    // ── Reader page ─────────────────────────────────────────────────────────
+    // ── Reader page ──────────────────────────────────────────────────────────
     // The mock server returns 5 pages, so the counter should show "1 / 5".
     expect(find.text('1 / 5'), findsOneWidget);
   });

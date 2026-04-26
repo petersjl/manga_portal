@@ -7,6 +7,7 @@ import 'package:go_router/go_router.dart';
 import '../models/chapter.dart';
 import '../models/manga.dart';
 import '../providers/api_providers.dart';
+import '../providers/library_provider.dart';
 import '../providers/settings_provider.dart';
 import '../widgets/chapter_list_tile.dart';
 
@@ -45,7 +46,52 @@ class MangaDetailPage extends ConsumerWidget {
       orElse: () => null,
     );
 
+    // Library state — watched here so the bookmark button in the AppBar rebuilds.
+    final manga = mangaAsync.valueOrNull;
+    final inLibrary = ref.watch(
+      libraryNotifierProvider.select(
+        (s) => s.valueOrNull?.any((e) => e.id == mangaId) ?? false,
+      ),
+    );
+    final notifier = ref.read(libraryNotifierProvider.notifier);
+
     return Scaffold(
+      appBar: AppBar(
+        title: manga != null
+            ? Text(
+                manga.attributes.titleFor('en'),
+                overflow: TextOverflow.ellipsis,
+              )
+            : null,
+        actions: [
+          if (manga != null)
+            IconButton(
+              icon: Icon(inLibrary ? Icons.bookmark : Icons.bookmark_border),
+              tooltip: inLibrary ? 'Remove from library' : 'Add to library',
+              onPressed: () async {
+                if (inLibrary) {
+                  await notifier.removeManga(mangaId);
+                  if (context.mounted) {
+                    ScaffoldMessenger.of(context)
+                      ..clearSnackBars()
+                      ..showSnackBar(
+                        const SnackBar(content: Text('Removed from library.')),
+                      );
+                  }
+                } else {
+                  await notifier.addManga(manga);
+                  if (context.mounted) {
+                    ScaffoldMessenger.of(context)
+                      ..clearSnackBars()
+                      ..showSnackBar(
+                        const SnackBar(content: Text('Added to library.')),
+                      );
+                  }
+                }
+              },
+            ),
+        ],
+      ),
       body: mangaAsync.when(
         loading: () => const Center(child: CircularProgressIndicator()),
         error: (error, _) => _ErrorBody(
@@ -57,7 +103,7 @@ class MangaDetailPage extends ConsumerWidget {
         ),
         data: (manga) => CustomScrollView(
           slivers: [
-            _MangaAppBar(manga: manga),
+            _MangaCover(manga: manga),
             _MangaInfo(manga: manga, locale: settings.preferredLanguage),
             if (actionChapter != null)
               _ReadingButton(
@@ -95,22 +141,21 @@ class MangaDetailPage extends ConsumerWidget {
   }
 }
 
-// ── App bar with cover image ─────────────────────────────────────────────────
+// ── Cover image ───────────────────────────────────────────────────────────────
 
-class _MangaAppBar extends StatelessWidget {
-  const _MangaAppBar({required this.manga});
+class _MangaCover extends StatelessWidget {
+  const _MangaCover({required this.manga});
 
   final Manga manga;
 
   @override
   Widget build(BuildContext context) {
     final coverUrl = manga.coverUrl(512);
-
-    return SliverAppBar(
-      expandedHeight: 300,
-      pinned: true,
-      flexibleSpace: FlexibleSpaceBar(
-        background: coverUrl != null
+    return SliverToBoxAdapter(
+      child: SizedBox(
+        height: 280,
+        width: double.infinity,
+        child: coverUrl != null
             ? Image(
                 image: CachedNetworkImageProvider(coverUrl),
                 fit: BoxFit.cover,
@@ -119,12 +164,6 @@ class _MangaAppBar extends StatelessWidget {
                 errorBuilder: (_, __, ___) => const SizedBox.expand(),
               )
             : null,
-        title: Text(
-          manga.attributes.titleFor('en'),
-          style: const TextStyle(shadows: [
-            Shadow(color: Colors.black54, blurRadius: 4),
-          ]),
-        ),
       ),
     );
   }

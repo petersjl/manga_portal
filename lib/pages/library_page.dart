@@ -1,29 +1,68 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
-// TODO(feature-5): Replace with real manga library grid.
-// Hardcoded manga ID used for Feature 2 steel thread verification.
-// "Dungeon Meshi" (Delicious in Dungeon) — popular, safe, many chapters.
-const _hardcodedMangaId = 'a96676e5-8ae2-425e-b549-7f15dd34a6d8';
+import '../providers/library_provider.dart';
+import '../widgets/manga_card.dart';
 
-class LibraryPage extends StatelessWidget {
+class LibraryPage extends ConsumerWidget {
   const LibraryPage({super.key});
 
   @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final libraryAsync = ref.watch(libraryNotifierProvider);
+
+    return libraryAsync.when(
+      loading: () => const Center(child: CircularProgressIndicator()),
+      error: (_, __) => const Center(
+        child: Text('Could not load library.'),
+      ),
+      data: (entries) {
+        if (entries.isEmpty) {
+          return const _EmptyLibrary();
+        }
+        return GridView.builder(
+          padding: const EdgeInsets.all(8),
+          gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+            crossAxisCount: 2,
+            childAspectRatio: 2 / 3,
+            crossAxisSpacing: 8,
+            mainAxisSpacing: 8,
+          ),
+          itemCount: entries.length,
+          itemBuilder: (context, index) {
+            final entry = entries[index];
+            return MangaCard(
+              manga: entry.toManga(),
+              onTap: () => context.push('/manga/${entry.id}'),
+            );
+          },
+        );
+      },
+    );
+  }
+}
+
+class _EmptyLibrary extends StatelessWidget {
+  const _EmptyLibrary();
+
+  @override
   Widget build(BuildContext context) {
+    final outline = Theme.of(context).colorScheme.outline;
     return Center(
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          const Text(
-            'Library',
-            style: TextStyle(fontSize: 24),
+          Icon(Icons.menu_book_outlined, size: 64, color: outline),
+          const SizedBox(height: 16),
+          Text(
+            'Your library is empty',
+            style: Theme.of(context).textTheme.titleMedium,
           ),
-          const SizedBox(height: 24),
-          FilledButton.icon(
-            onPressed: () => context.push('/manga/$_hardcodedMangaId'),
-            icon: const Icon(Icons.menu_book),
-            label: const Text('Open Manga Detail (test)'),
+          const SizedBox(height: 8),
+          Text(
+            'Search for manga to add them here.',
+            style: TextStyle(color: outline),
           ),
         ],
       ),

@@ -1,10 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import 'package:manga_portal/main.dart';
 
 void main() {
+  setUp(() {
+    SharedPreferences.setMockInitialValues({});
+  });
+
   group('App smoke tests', () {
     testWidgets('renders without throwing', (tester) async {
       await tester.pumpWidget(const ProviderScope(child: MangaPortal()));
@@ -18,8 +23,7 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.byType(NavigationBar), findsOneWidget);
-      // LibraryPage body also renders a 'Library' heading, so there are ≥2.
-      expect(find.text('Library'), findsAtLeastNWidgets(2));
+      expect(find.text('Library'), findsOneWidget);
       expect(find.text('Search'), findsOneWidget);
       expect(find.text('Settings'), findsOneWidget);
     });

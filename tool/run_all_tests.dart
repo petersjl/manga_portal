@@ -64,16 +64,30 @@ void main(List<String> args) async {
     exit(widgetCode);
   }
 
-  // ── 3. Integration tests ──────────────────────────────────────────────────
+  // ── 3. Integration tests (one file at a time to avoid parallel APK
+  //        installs overwriting each other on the shared device) ────────────
   _log('Running integration tests against mock server…');
-  final integrationCode = await _run([
-    'flutter',
-    'test',
-    'integration_test/',
-    '--dart-define=MOCK_BASE_URL=$mockBaseUrl',
-    '-d',
-    device,
-  ]);
+  final testFiles = Directory('integration_test')
+      .listSync()
+      .whereType<File>()
+      .where((f) => f.path.endsWith('_test.dart'))
+      .map((f) => f.path)
+      .toList()
+    ..sort();
+
+  var integrationCode = 0;
+  for (final file in testFiles) {
+    _log('Running $file');
+    final code = await _run([
+      'flutter',
+      'test',
+      file,
+      '--dart-define=MOCK_BASE_URL=$mockBaseUrl',
+      '-d',
+      device,
+    ]);
+    if (code != 0) integrationCode = code;
+  }
 
   // ── 4. Tear down ──────────────────────────────────────────────────────────
   serverProcess.kill();

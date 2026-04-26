@@ -68,32 +68,41 @@ void main(List<String> args) async {
   final mockBaseUrl = 'http://$hostIp:$port';
   _log('Mock server is up on port $port. App will use: $mockBaseUrl');
 
-  // ── 2. Run integration tests ──────────────────────────────────────────────
-  _log('Running integration tests: flutter test integration_test/ -d $device');
+  // ── 2. Run integration tests (one file at a time to avoid parallel APK
+  //        installs overwriting each other on the shared device) ─────────────
+  final testFiles = Directory('integration_test')
+      .listSync()
+      .whereType<File>()
+      .where((f) => f.path.endsWith('_test.dart'))
+      .map((f) => f.path)
+      .toList()
+    ..sort();
 
-  final testProcess = await Process.start(
-    'flutter',
-    [
-      'test',
-      'integration_test/',
-      '--dart-define=MOCK_BASE_URL=$mockBaseUrl',
-      '-d',
-      device,
-    ],
-    workingDirectory: Directory.current.path,
-  );
-
-  // Stream test output in real time.
-  testProcess.stdout.listen((data) => stdout.add(data));
-  testProcess.stderr.listen((data) => stderr.add(data));
-
-  final exitCode = await testProcess.exitCode;
+  var overallExitCode = 0;
+  for (final file in testFiles) {
+    _log('Running $file');
+    final testProcess = await Process.start(
+      'flutter',
+      [
+        'test',
+        file,
+        '--dart-define=MOCK_BASE_URL=$mockBaseUrl',
+        '-d',
+        device,
+      ],
+      workingDirectory: Directory.current.path,
+    );
+    testProcess.stdout.listen((data) => stdout.add(data));
+    testProcess.stderr.listen((data) => stderr.add(data));
+    final code = await testProcess.exitCode;
+    if (code != 0) overallExitCode = code;
+  }
 
   // ── 3. Tear down the mock server ─────────────────────────────────────────
   serverProcess.kill();
   _log('Mock server stopped.');
 
-  exit(exitCode);
+  exit(overallExitCode);
 }
 
 void _log(String msg) => stderr.writeln('[runner] $msg');
