@@ -16,7 +16,7 @@ Features are implemented one at a time in order. Each feature ships with accompa
   - `dio` — HTTP client
   - `cached_network_image` — image caching
   - `shared_preferences` — local progress + library + settings storage
-  - `flutter_secure_storage` — auth token storage (used in Feature 8)
+  - `flutter_secure_storage` — auth token storage (used in Deferred Feature 1)
   - `build_runner`, `riverpod_generator` — code generation (dev)
 - [x] Run `flutter pub get`
 - [x] Create `lib/app.dart`:
@@ -327,6 +327,44 @@ _All tasks and tests complete. Verified on emulator: real MangaDex search return
 
 ---
 
+## Feature 8 — Reader Info Bars & Settings Drawer
+
+**Goal**: Replace the always-visible static reader chrome with auto-hiding top and bottom info bars, and move reading mode configuration into a bottom drawer accessible from the reader.
+
+### Tasks
+
+- [ ] Add visibility state to `ReaderPage` (bool `_barsVisible`, toggled on tap anywhere outside the bars)
+- [ ] Top bar (animated slide in/out from top):
+  - Back button (pops the route)
+  - Title: `"{chapter number}: {chapter name}"` — falls back to `"Chapter {number}"` when no title
+  - Settings cog icon that opens the reader settings bottom sheet
+- [ ] Bottom bar (animated slide in/out from bottom):
+  - "Prev" button — same behaviour as swiping past the first page (shows previous-chapter transition or does nothing on first chapter)
+  - Centered page counter: `"{currentPage}/{totalPages}"`
+  - "Next" button — same behaviour as swiping past the last page (shows next-chapter transition)
+- [ ] Auto-hide bars:
+  - Paged mode: hide bars on any `PageView` page change
+  - Scroll mode: hide bars when the user starts scrolling vertically
+- [ ] Tap-to-toggle: tapping anywhere in the reader that is NOT one of the bars toggles visibility
+- [ ] Reader settings bottom sheet (opened from the cog):
+  - Reading mode selector — a `SegmentedButton` supporting `n` items (currently: Paged / Vertical); replaces the mode selector on `MangaDetailPage` and the toggle button in the AppBar
+  - The `MangaDetailPage` reading mode selector and AppBar toggle button should be **removed** once the bottom sheet is in place
+- [ ] Bars and bottom sheet use `AnimatedSlide` + `AnimatedOpacity` (or equivalent) for smooth show/hide transitions
+
+### Tests
+
+- Widget test: `test/widget/reader_bars_test.dart`
+  - Bars are hidden on initial render
+  - Tapping the reader body shows the bars
+  - Tapping again hides the bars
+  - Prev/Next buttons trigger chapter navigation callbacks
+  - Settings cog opens the bottom sheet with the reading mode selector
+- Integration test: `integration_test/reader_bars_flow_test.dart`
+  - Open reader → bars not visible → tap screen → bars appear → tap cog → bottom sheet with mode selector shown
+  - Switch reading mode in bottom sheet → ListView / PageView rendered accordingly
+
+---
+
 ## Stretch Goal — Self-Hosted Server Support (Future, No Implementation Yet)
 
 **Goal**: Allow users to point the app at one or more self-hosted manga servers that implement the same API contract as MangaDex. Searches and browse flows would aggregate results from MangaDex and any configured custom servers.
@@ -359,7 +397,7 @@ _All tasks and tests complete. Verified on emulator: real MangaDex search return
 
 ---
 
-## Feature 8 — MangaDex Authentication (Deferred) 🚧 (In Progress)
+## Deferred Feature 1 — MangaDex Authentication
 
 **Status**: Blocked — MangaDex public OAuth clients are not available as of April 2026. Personal clients only work for the owning account.
 
