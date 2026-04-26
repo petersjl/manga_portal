@@ -1,3 +1,5 @@
+import 'dart:ui';
+
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_markdown_plus/flutter_markdown_plus.dart';
@@ -57,12 +59,6 @@ class MangaDetailPage extends ConsumerWidget {
 
     return Scaffold(
       appBar: AppBar(
-        title: manga != null
-            ? Text(
-                manga.attributes.titleFor('en'),
-                overflow: TextOverflow.ellipsis,
-              )
-            : null,
         actions: [
           if (manga != null)
             IconButton(
@@ -151,19 +147,50 @@ class _MangaCover extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final coverUrl = manga.coverUrl(512);
+    final title = manga.attributes.titleFor('en');
+
     return SliverToBoxAdapter(
       child: SizedBox(
         height: 280,
         width: double.infinity,
-        child: coverUrl != null
-            ? Image(
+        child: Stack(
+          fit: StackFit.expand,
+          children: [
+            // Cover art.
+            if (coverUrl != null)
+              Image(
                 image: CachedNetworkImageProvider(coverUrl),
                 fit: BoxFit.cover,
                 frameBuilder: (context, child, frame, sync) =>
                     sync || frame != null ? child : const SizedBox.expand(),
                 errorBuilder: (_, __, ___) => const SizedBox.expand(),
-              )
-            : null,
+              ),
+            // Frosted-glass title strip at the bottom.
+            Positioned(
+              left: 0,
+              right: 0,
+              bottom: 0,
+              child: ClipRect(
+                child: BackdropFilter(
+                  filter: ImageFilter.blur(sigmaX: 6, sigmaY: 6),
+                  child: Container(
+                    color: Colors.black.withAlpha(30),
+                    padding: const EdgeInsets.fromLTRB(16, 10, 16, 12),
+                    child: Text(
+                      title,
+                      style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                            color: Colors.white,
+                            fontWeight: FontWeight.bold,
+                          ),
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }

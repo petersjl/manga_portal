@@ -217,19 +217,19 @@ _All tasks and tests complete. Verified on emulator: real MangaDex search return
 
 ---
 
-## Feature 5 — Library Page 🚧 (In Progress)
+## Feature 5 — Library Page ✅
 
 **Goal**: Users can save manga to a local library and return to them quickly.
 
 ### Tasks
 
-- [ ] Create `lib/providers/library_provider.dart` — `LibraryNotifier` (`AsyncNotifier`):
+- [x] Create `lib/providers/library_provider.dart` — `LibraryNotifier` (`AsyncNotifier`):
   - Stores list of manga IDs + cached title + cached cover URL in `SharedPreferences`
   - `addManga(Manga)`, `removeManga(mangaId)`, `isInLibrary(mangaId)`
   - On `app.dart` startup: pre-populate from saved IDs
-- [ ] Update `MangaDetailPage`:
+- [x] Update `MangaDetailPage`:
   - Add "Add to Library" / "Remove from Library" toggle button
-- [ ] Implement `lib/pages/library_page.dart`:
+- [x] Implement `lib/pages/library_page.dart`:
   - Grid of `MangaCard` widgets from library provider
   - Empty state when no manga saved
   - Tap card → detail page
@@ -237,15 +237,22 @@ _All tasks and tests complete. Verified on emulator: real MangaDex search return
 
 ### Tests
 
-- Widget test: `test/widget/library_page_test.dart`
+- [x] Widget test: `test/widget/library_page_test.dart`
   - Library grid renders saved manga
   - Empty state shows when no manga saved
-- Integration test: `integration_test/library_flow_test.dart`
+- [x] Integration test: `integration_test/library_flow_test.dart`
   - Add manga from detail page → appears in library → tap → navigates to detail
+
+### Extras
+
+- **Persistent top bar**: The detail page uses a standard `AppBar` (always pinned) with the back button and bookmark icon clearly visible above the cover art, eliminating the issue of buttons being hard to see when overlaid on cover images.
+- **Frosted-glass title strip**: The manga title is rendered at the bottom of the cover image on a `BackdropFilter`-blurred semi-transparent strip, keeping it legible regardless of the artwork behind it.
+- **`clearSnackBars()` pattern**: Every snackbar is shown with `..clearSnackBars()..showSnackBar(...)` to prevent queue conflicts when adding and removing in quick succession.
+- **Integration test runner fix**: Added per-file sequential execution to `tool/run_integration_tests.dart` and `tool/run_all_tests.dart` to prevent parallel APK installs from killing in-progress test sessions on the shared device.
 
 ---
 
-## Feature 6 — Settings Page
+## Feature 6 — Settings Page 🚧 (In Progress)
 
 **Goal**: Users can configure language, image quality, and theme.
 
