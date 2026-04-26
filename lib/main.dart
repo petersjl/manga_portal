@@ -2,14 +2,18 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'app.dart';
+import 'providers/settings_provider.dart';
 
 void main() => runApp(const ProviderScope(child: MangaPortal()));
 
-class MangaPortal extends StatelessWidget {
+class MangaPortal extends ConsumerWidget {
   const MangaPortal({super.key});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final themeMode = ref.watch(
+      settingsNotifierProvider.select((s) => s.themeMode),
+    );
     return MaterialApp.router(
       title: 'Manga Portal',
       theme: ThemeData(
@@ -25,7 +29,7 @@ class MangaPortal extends StatelessWidget {
         ),
         useMaterial3: true,
       ),
-      themeMode: ThemeMode.dark,
+      themeMode: themeMode,
       routerConfig: goRouter,
     );
   }

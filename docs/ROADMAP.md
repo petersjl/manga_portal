@@ -252,38 +252,48 @@ _All tasks and tests complete. Verified on emulator: real MangaDex search return
 
 ---
 
-## Feature 6 — Settings Page 🚧 (In Progress)
+## Feature 6 — Settings Page ✅
 
 **Goal**: Users can configure language, image quality, and theme.
 
 ### Tasks
 
-- [ ] Create `lib/providers/settings_provider.dart` — `SettingsNotifier` (`AsyncNotifier`):
-  - `language` (default: `'en'`) — stored in `SharedPreferences`
-  - `contentRating` (default: `['safe', 'suggestive']`) — stored in `SharedPreferences`; passed as `contentRating[]` on all manga search/list calls
+- [x] Create `lib/providers/settings_provider.dart` — `SettingsNotifier` (sync `Notifier<Settings>`):
+  - `preferredLanguage` (default: `'en'`) — stored in `SharedPreferences`
+  - `maxContentRating` (default: `'suggestive'`) — stored in `SharedPreferences`; `contentRating` computed getter returns all tiers at or below the max
   - `imageQuality` (`data` or `data-saver`) — stored in `SharedPreferences`
   - `themeMode` (`system` / `light` / `dark`) — stored in `SharedPreferences`
-- [ ] Update `app.dart` / `main.dart` to read `themeMode` from `settingsProvider`
-- [ ] Update chapter feed API calls to use `language` from `settingsProvider`
-- [ ] Implement `lib/pages/settings_page.dart`:
-  - Language picker (dropdown or segmented control)
-  - Content rating multi-select picklist (`safe`, `suggestive`, `erotica`, `pornographic`; default: `safe` + `suggestive`)
-  - Quality toggle (full / data-saver)
-  - Theme toggle (system / light / dark)
+- [x] Update `main.dart` to read `themeMode` from `settingsNotifierProvider`
+- [x] API calls already use `settings.contentRating` (computed getter) — no changes needed
+- [x] Implement `lib/pages/settings_page.dart`:
+  - Theme dropdown (System / Light / Dark)
+  - Language dropdown (13 languages)
+  - Max content rating dropdown (Safe / Suggestive / Erotica / Pornographic)
+  - Image quality `SegmentedButton` (Full / Data saver)
+  - "Clear reading history" tile with confirmation dialog
   - Remove `Placeholder`
 
 ### Tests
 
-- Widget test: `test/widget/settings_page_test.dart`
+- [x] Widget test: `test/widget/settings_page_test.dart` (5 tests)
   - Settings render with correct initial values
-  - Changing language updates provider
-  - Content rating picklist shows current selection; changing it updates provider
-- Integration test: `integration_test/settings_flow_test.dart`
-  - Change quality setting → opens reader → data-saver URLs used
+  - Reflects non-default settings
+  - Quality segmented button switches imageQuality
+  - Content rating dropdown shows all tier options
+  - Language dropdown shows available languages
+- [x] Integration test: `integration_test/settings_flow_test.dart` (3 tests)
+  - Settings page renders all sections
+  - Change quality setting → opens reader → data-saver URLs confirmed in mock server logs
+  - Language setting persists across navigation
+
+### Extras
+
+- **Max content rating as a cascade**: Rather than a multi-select checklist, content rating uses a single "maximum allowed" dropdown. Selecting "Suggestive" automatically includes Safe + Suggestive. The `contentRating` getter on `Settings` computes the list from `_ratingOrder`, keeping all API call sites unchanged.
+- **Sync notifier with async init**: `SettingsNotifier` is a sync `Notifier<Settings>` so all existing `ref.watch(settingsNotifierProvider)` call sites continue working without destructuring. `build()` returns defaults synchronously and `_loadFromPrefs()` updates state asynchronously on first build.
 
 ---
 
-## Feature 7 — Vertical Scroll (Webtoon) Mode
+## Feature 7 — Vertical Scroll (Webtoon) Mode 🚧 (In Progress)
 
 **Goal**: Support vertical continuous scroll in addition to horizontal paged reading. Users set a preferred mode per series (stored locally).
 
