@@ -327,41 +327,48 @@ _All tasks and tests complete. Verified on emulator: real MangaDex search return
 
 ---
 
-## Feature 8 — Reader Info Bars & Settings Drawer
+## Feature 8 — Reader Info Bars & Settings Drawer ✅
 
 **Goal**: Replace the always-visible static reader chrome with auto-hiding top and bottom info bars, and move reading mode configuration into a bottom drawer accessible from the reader.
 
 ### Tasks
 
-- [ ] Add visibility state to `ReaderPage` (bool `_barsVisible`, toggled on tap anywhere outside the bars)
-- [ ] Top bar (animated slide in/out from top):
+- [x] Add visibility state to `ReaderPage` (bool `_barsVisible`, toggled on tap anywhere outside the bars)
+- [x] Top bar (animated slide in/out from top):
   - Back button (pops the route)
   - Title: `"{chapter number}: {chapter name}"` — falls back to `"Chapter {number}"` when no title
   - Settings cog icon that opens the reader settings bottom sheet
-- [ ] Bottom bar (animated slide in/out from bottom):
+- [x] Bottom bar (animated slide in/out from bottom):
   - "Prev" button — same behaviour as swiping past the first page (shows previous-chapter transition or does nothing on first chapter)
   - Centered page counter: `"{currentPage}/{totalPages}"`
   - "Next" button — same behaviour as swiping past the last page (shows next-chapter transition)
-- [ ] Auto-hide bars:
+- [x] Auto-hide bars:
   - Paged mode: hide bars on any `PageView` page change
   - Scroll mode: hide bars when the user starts scrolling vertically
-- [ ] Tap-to-toggle: tapping anywhere in the reader that is NOT one of the bars toggles visibility
-- [ ] Reader settings bottom sheet (opened from the cog):
+- [x] Tap-to-toggle: tapping anywhere in the reader that is NOT one of the bars toggles visibility
+- [x] Reader settings bottom sheet (opened from the cog):
   - Reading mode selector — a `SegmentedButton` supporting `n` items (currently: Paged / Vertical); replaces the mode selector on `MangaDetailPage` and the toggle button in the AppBar
   - The `MangaDetailPage` reading mode selector and AppBar toggle button should be **removed** once the bottom sheet is in place
-- [ ] Bars and bottom sheet use `AnimatedSlide` + `AnimatedOpacity` (or equivalent) for smooth show/hide transitions
+- [x] Bars and bottom sheet use `AnimatedSlide` + `AnimatedOpacity` (or equivalent) for smooth show/hide transitions
 
 ### Tests
 
-- Widget test: `test/widget/reader_bars_test.dart`
+- [x] Widget test: `test/widget/reader_modes_test.dart`
   - Bars are hidden on initial render
   - Tapping the reader body shows the bars
   - Tapping again hides the bars
   - Prev/Next buttons trigger chapter navigation callbacks
   - Settings cog opens the bottom sheet with the reading mode selector
-- Integration test: `integration_test/reader_bars_flow_test.dart`
+- [x] Integration test: `integration_test/reader_modes_flow_test.dart`
   - Open reader → bars not visible → tap screen → bars appear → tap cog → bottom sheet with mode selector shown
   - Switch reading mode in bottom sheet → ListView / PageView rendered accordingly
+
+### Extras
+
+- Added three in-reader reading modes: `L->R`, `R->L`, and `Vertical/Scroll` in the reader settings sheet, replacing the old two-option selector and preserving per-series preference.
+- Implemented full R->L page ordering (page 1 at far right, last page at far left), with transition-edge behavior and bottom bar button placement matched to direction (`Next` on left only in R->L).
+- Direction switching now preserves the current logical page number when toggling between `L->R` and `R->L`.
+- Reader settings control was resized to fit sheet width reliably on smaller screens so mode buttons no longer overflow.
 
 ---
 
