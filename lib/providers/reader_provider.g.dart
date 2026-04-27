@@ -26,7 +26,7 @@ final imageQualityProvider = AutoDisposeProvider<String>.internal(
 // ignore: unused_element
 typedef ImageQualityRef = AutoDisposeProviderRef<String>;
 String _$readingModeNotifierHash() =>
-    r'a6c1d3c391ca954bf9be4bbf5a02859c2e2e5044';
+    r'22144c58942f59d97bcc73c7c5b945c59db0c829';
 
 /// Copied from Dart SDK
 class _SystemHash {
@@ -58,29 +58,33 @@ abstract class _$ReadingModeNotifier
   );
 }
 
-/// Persists and exposes the reading mode ('paged' or 'scroll') for a specific
-/// manga. Defaults to 'paged' on first use. Persisted to LocalProgressService
+/// Persists and exposes the reading mode ('ltr', 'rtl', or 'scroll') for a
+/// specific manga. Defaults to 'ltr' on first use. Persisted to
+/// LocalProgressService
 /// so the preference survives app restarts.
 ///
 /// Copied from [ReadingModeNotifier].
 @ProviderFor(ReadingModeNotifier)
 const readingModeNotifierProvider = ReadingModeNotifierFamily();
 
-/// Persists and exposes the reading mode ('paged' or 'scroll') for a specific
-/// manga. Defaults to 'paged' on first use. Persisted to LocalProgressService
+/// Persists and exposes the reading mode ('ltr', 'rtl', or 'scroll') for a
+/// specific manga. Defaults to 'ltr' on first use. Persisted to
+/// LocalProgressService
 /// so the preference survives app restarts.
 ///
 /// Copied from [ReadingModeNotifier].
 class ReadingModeNotifierFamily extends Family<String> {
-  /// Persists and exposes the reading mode ('paged' or 'scroll') for a specific
-  /// manga. Defaults to 'paged' on first use. Persisted to LocalProgressService
+  /// Persists and exposes the reading mode ('ltr', 'rtl', or 'scroll') for a
+  /// specific manga. Defaults to 'ltr' on first use. Persisted to
+  /// LocalProgressService
   /// so the preference survives app restarts.
   ///
   /// Copied from [ReadingModeNotifier].
   const ReadingModeNotifierFamily();
 
-  /// Persists and exposes the reading mode ('paged' or 'scroll') for a specific
-  /// manga. Defaults to 'paged' on first use. Persisted to LocalProgressService
+  /// Persists and exposes the reading mode ('ltr', 'rtl', or 'scroll') for a
+  /// specific manga. Defaults to 'ltr' on first use. Persisted to
+  /// LocalProgressService
   /// so the preference survives app restarts.
   ///
   /// Copied from [ReadingModeNotifier].
@@ -116,15 +120,17 @@ class ReadingModeNotifierFamily extends Family<String> {
   String? get name => r'readingModeNotifierProvider';
 }
 
-/// Persists and exposes the reading mode ('paged' or 'scroll') for a specific
-/// manga. Defaults to 'paged' on first use. Persisted to LocalProgressService
+/// Persists and exposes the reading mode ('ltr', 'rtl', or 'scroll') for a
+/// specific manga. Defaults to 'ltr' on first use. Persisted to
+/// LocalProgressService
 /// so the preference survives app restarts.
 ///
 /// Copied from [ReadingModeNotifier].
 class ReadingModeNotifierProvider
     extends AutoDisposeNotifierProviderImpl<ReadingModeNotifier, String> {
-  /// Persists and exposes the reading mode ('paged' or 'scroll') for a specific
-  /// manga. Defaults to 'paged' on first use. Persisted to LocalProgressService
+  /// Persists and exposes the reading mode ('ltr', 'rtl', or 'scroll') for a
+  /// specific manga. Defaults to 'ltr' on first use. Persisted to
+  /// LocalProgressService
   /// so the preference survives app restarts.
   ///
   /// Copied from [ReadingModeNotifier].

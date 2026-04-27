@@ -2,11 +2,13 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import '../database/app_database.dart';
 import '../models/chapter.dart';
 import '../models/chapter_pages.dart';
 import '../models/manga.dart';
 import '../services/local_progress.dart';
 import '../services/mangadex_api.dart';
+import '../services/storage_migration_service.dart';
 import 'settings_provider.dart';
 
 part 'api_providers.g.dart';
@@ -19,6 +21,21 @@ MangaDexApiService mangaDexApiService(Ref ref) {
   return MangaDexApiService(
     baseUrl: mockBaseUrl.isEmpty ? null : mockBaseUrl,
   );
+}
+
+@riverpod
+AppDatabase appDatabase(Ref ref) {
+  final db = AppDatabase();
+  ref.onDispose(db.close);
+  return db;
+}
+
+@riverpod
+Future<void> storageMigration(Ref ref) async {
+  final prefs = await SharedPreferences.getInstance();
+  final db = ref.watch(appDatabaseProvider);
+  final migration = StorageMigrationService(db, prefs);
+  await migration.migrateIfNeeded();
 }
 
 @riverpod

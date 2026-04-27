@@ -25,6 +25,39 @@ final mangaDexApiServiceProvider =
 @Deprecated('Will be removed in 3.0. Use Ref instead')
 // ignore: unused_element
 typedef MangaDexApiServiceRef = AutoDisposeProviderRef<MangaDexApiService>;
+String _$appDatabaseHash() => r'4db1c5efe1a73afafa926c6e91d12e49a68b1abc';
+
+/// See also [appDatabase].
+@ProviderFor(appDatabase)
+final appDatabaseProvider = AutoDisposeProvider<AppDatabase>.internal(
+  appDatabase,
+  name: r'appDatabaseProvider',
+  debugGetCreateSourceHash:
+      const bool.fromEnvironment('dart.vm.product') ? null : _$appDatabaseHash,
+  dependencies: null,
+  allTransitiveDependencies: null,
+);
+
+@Deprecated('Will be removed in 3.0. Use Ref instead')
+// ignore: unused_element
+typedef AppDatabaseRef = AutoDisposeProviderRef<AppDatabase>;
+String _$storageMigrationHash() => r'4af1af946ae97ca0e3c41f71360d9bd4f12491b9';
+
+/// See also [storageMigration].
+@ProviderFor(storageMigration)
+final storageMigrationProvider = AutoDisposeFutureProvider<void>.internal(
+  storageMigration,
+  name: r'storageMigrationProvider',
+  debugGetCreateSourceHash: const bool.fromEnvironment('dart.vm.product')
+      ? null
+      : _$storageMigrationHash,
+  dependencies: null,
+  allTransitiveDependencies: null,
+);
+
+@Deprecated('Will be removed in 3.0. Use Ref instead')
+// ignore: unused_element
+typedef StorageMigrationRef = AutoDisposeFutureProviderRef<void>;
 String _$localProgressServiceHash() =>
     r'046b04f3ea6b625f25d2c3a42a5e471ab86daa2f';
 

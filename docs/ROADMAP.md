@@ -384,20 +384,20 @@ _All tasks and tests complete. Verified on emulator: real MangaDex search return
 
 ### Tasks
 
-- [ ] Add DB package(s) in `pubspec.yaml` (`drift` + `sqlite3_flutter_libs` + build tooling) and run codegen.
-- [ ] Create local DB module (schema + DAOs) for:
+- [x] Add DB package(s) in `pubspec.yaml` (`drift` + `sqlite3_flutter_libs` + build tooling) and run codegen.
+- [x] Create local DB module (schema + DAOs) for:
   - manga table (id, title, cover url cache)
   - chapters table (id, mangaId, chapter number/title/language/group)
   - download jobs table (chapterId, status, progress, bytes, error, timestamps)
   - downloaded pages table (chapterId, page index, local file path, checksum/size)
-- [ ] Add a storage abstraction service layer so providers/UI do not import DB directly.
+- [x] Add a storage abstraction service layer so providers/UI do not import DB directly.
 - [ ] Migrate existing progress/library/settings persistence behind service interfaces (keep behavior unchanged).
-- [ ] Add migration/versioning strategy for future schema changes.
+- [x] Add migration/versioning strategy for future schema changes.
 
 ### Tests
 
 - [ ] Unit tests for DAO CRUD and migrations.
-- [ ] Widget smoke tests to ensure existing library/progress/settings behavior remains unchanged after backend swap.
+- [x] Widget smoke tests to ensure existing library/progress/settings behavior remains unchanged after backend swap.
 
 ---
 
