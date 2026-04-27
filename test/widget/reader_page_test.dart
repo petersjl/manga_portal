@@ -80,7 +80,8 @@ void main() {
       expect(find.byType(ReaderPageImage), findsWidgets);
     });
 
-    testWidgets('shows page counter in app bar', (tester) async {
+    testWidgets('shows page counter in bottom bar when bars are toggled on',
+        (tester) async {
       await tester.pumpWidget(
         _buildTestApp([
           atHomeServerProvider('test-chapter-id').overrideWith(
@@ -90,6 +91,12 @@ void main() {
       );
 
       await _pumpAfterLoad(tester);
+
+      // Bars are hidden by default — tap to show them.
+      await tester.tapAt(const Offset(400, 300));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
+      await tester.pump();
 
       // Should show "1 / 3" for the first page of a 3-page chapter.
       expect(find.text('1 / 3'), findsOneWidget);

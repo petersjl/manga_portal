@@ -53,8 +53,8 @@ Widget _buildApp(List<Override> overrides) {
   SharedPreferences.setMockInitialValues({});
   return ProviderScope(
     overrides: [
-      // Provide a real (empty) LocalProgressService so _ReadingModeSelector
-      // and progress tracking work without making real SharedPreferences calls.
+      // Provide a real (empty) LocalProgressService so progress tracking
+      // works without making real SharedPreferences calls.
       localProgressServiceProvider.overrideWith((ref) async {
         return LocalProgressService(await SharedPreferences.getInstance());
       }),

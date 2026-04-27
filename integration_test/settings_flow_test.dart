@@ -22,6 +22,13 @@ void main() {
     await prefs.clear();
   });
 
+  Future<void> showReaderBarsIfHidden(WidgetTester tester) async {
+    if (find.byIcon(Icons.settings).evaluate().isEmpty) {
+      await tester.tapAt(const Offset(200, 400));
+      await tester.pump(const Duration(milliseconds: 350));
+    }
+  }
+
   testWidgets('settings page renders all sections', (tester) async {
     app.main();
     await tester.pumpAndSettle();
@@ -76,7 +83,8 @@ void main() {
     await tester.tap(find.text('Ch. 2'));
     await tester.pumpAndSettle();
 
-    // Reader opened successfully — page indicator is visible.
+    // Reader opened successfully — reveal bars then verify page indicator.
+    await showReaderBarsIfHidden(tester);
     expect(find.textContaining('1 / 5'), findsOneWidget);
   });
 

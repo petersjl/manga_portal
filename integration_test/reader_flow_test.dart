@@ -53,7 +53,12 @@ void main() {
     await tester.pumpAndSettle();
 
     // ── Reader page ──────────────────────────────────────────────────────────
-    // The mock server returns 5 pages, so the counter should show "1 / 5".
+    // Verify we're on the reader page showing a PageView with images.
+    expect(find.byType(PageView), findsOneWidget);
+
+    // Tap the screen to show info bars, then check the page counter.
+    await tester.tapAt(const Offset(200, 400));
+    await tester.pump(const Duration(milliseconds: 350));
     expect(find.text('1 / 5'), findsOneWidget);
   });
 }

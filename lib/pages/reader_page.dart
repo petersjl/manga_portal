@@ -77,6 +77,9 @@ class _ReaderPageState extends ConsumerState<ReaderPage> {
   // Set to true once the chapter has been marked as fully read in scroll mode.
   bool _scrollModeChapterRead = false;
 
+  // Whether the top/bottom info bars are currently visible.
+  bool _barsVisible = false;
+
   // ── Lifecycle ──────────────────────────────────────────────────────────────
 
   @override
@@ -181,6 +184,7 @@ class _ReaderPageState extends ConsumerState<ReaderPage> {
       setState(() {
         _currentMangaPage = mangaPage;
         _isOnTransitionPage = false;
+        _barsVisible = false;
       });
       // Only record progress once the user has moved past the first page.
       // This prevents opening a chapter (which parks at page 0) from
@@ -189,7 +193,10 @@ class _ReaderPageState extends ConsumerState<ReaderPage> {
       if (_hasUserPaged) _saveProgress(mangaPage);
       _startPreload(mangaPage, server);
     } else {
-      setState(() => _isOnTransitionPage = true);
+      setState(() {
+        _isOnTransitionPage = true;
+        _barsVisible = false;
+      });
       // User swiped past the last page — chapter is complete.
       if (viewIndex == pages.length + 1) _markCurrentChapterRead();
     }
@@ -248,6 +255,10 @@ class _ReaderPageState extends ConsumerState<ReaderPage> {
 
   void _onScrollChanged() {
     if (!_scrollController.hasClients) return;
+
+    // Hide bars whenever the user scrolls.
+    if (_barsVisible) setState(() => _barsVisible = false);
+
     final maxExtent = _scrollController.position.maxScrollExtent;
     if (maxExtent <= 0) return;
 
@@ -282,7 +293,22 @@ class _ReaderPageState extends ConsumerState<ReaderPage> {
     ref.invalidate(atHomeServerProvider(_currentChapterId));
   }
 
+  // ── Bar visibility ──────────────────────────────────────────────────────────
+
+  void _toggleBars() => setState(() => _barsVisible = !_barsVisible);
+
   // ── Chapter navigation helpers ─────────────────────────────────────────────
+
+  void _navigateAdjacentChapter(
+    bool next,
+    List<Chapter> allChapters,
+    String preferredLanguage,
+  ) {
+    final result = _getAdjacentChapter(allChapters, next, preferredLanguage);
+    if (result is _ChapterNavAvailable) {
+      _loadChapter(result.chapter.id, fromTransition: true);
+    }
+  }
 
   _ChapterNavResult _getAdjacentChapter(
     List<Chapter> allChapters,
@@ -332,6 +358,180 @@ class _ReaderPageState extends ConsumerState<ReaderPage> {
         sameGroup.isNotEmpty ? sameGroup.first : inLanguage.first);
   }
 
+  // ── Settings sheet ─────────────────────────────────────────────────────────
+
+  void _openSettingsSheet(BuildContext context) {
+    showModalBottomSheet<void>(
+      context: context,
+      builder: (sheetContext) {
+        return Consumer(
+          builder: (ctx, ref, _) {
+            final mangaId = widget.mangaId;
+            final mode = mangaId != null
+                ? ref.watch(readingModeNotifierProvider(mangaId))
+                : 'paged';
+            return SafeArea(
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(16, 20, 16, 8),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Reader settings',
+                      style: Theme.of(ctx).textTheme.titleMedium,
+                    ),
+                    const SizedBox(height: 16),
+                    Row(
+                      children: [
+                        Text(
+                          'Reading mode',
+                          style: Theme.of(ctx).textTheme.bodyMedium,
+                        ),
+                        const Spacer(),
+                        SegmentedButton<String>(
+                          segments: const [
+                            ButtonSegment(
+                              value: 'paged',
+                              icon: Icon(Icons.auto_stories, size: 18),
+                              label: Text('Paged'),
+                            ),
+                            ButtonSegment(
+                              value: 'scroll',
+                              icon: Icon(Icons.view_agenda, size: 18),
+                              label: Text('Scroll'),
+                            ),
+                          ],
+                          selected: {mode},
+                          onSelectionChanged: mangaId != null
+                              ? (s) => ref
+                                  .read(readingModeNotifierProvider(mangaId)
+                                      .notifier)
+                                  .setMode(s.first)
+                              : null,
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 8),
+                  ],
+                ),
+              ),
+            );
+          },
+        );
+      },
+    );
+  }
+
+  // ── Info bars ──────────────────────────────────────────────────────────────
+
+  Widget _buildTopBar(BuildContext context, Chapter? currentChapter) {
+    final chapterNum = currentChapter?.attributes.chapterNumber;
+    final chapterTitle = currentChapter?.attributes.title;
+    final String titleText;
+    if (chapterNum != null && chapterTitle != null && chapterTitle.isNotEmpty) {
+      titleText = 'Ch. $chapterNum: $chapterTitle';
+    } else if (chapterNum != null) {
+      titleText = 'Chapter $chapterNum';
+    } else {
+      titleText = 'Oneshot';
+    }
+
+    return Container(
+      color: Colors.black87,
+      child: SafeArea(
+        bottom: false,
+        child: Row(
+          children: [
+            IconButton(
+              icon: const Icon(Icons.arrow_back, color: Colors.white),
+              tooltip: 'Back',
+              onPressed: () => context.pop(),
+            ),
+            Expanded(
+              child: Text(
+                titleText,
+                style: const TextStyle(color: Colors.white, fontSize: 16),
+                overflow: TextOverflow.ellipsis,
+                maxLines: 1,
+              ),
+            ),
+            IconButton(
+              icon: const Icon(Icons.settings, color: Colors.white),
+              tooltip: 'Reader settings',
+              onPressed: () => _openSettingsSheet(context),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildBottomBar(
+    BuildContext context,
+    int totalPages,
+    AsyncValue<List<Chapter>> chaptersAsync,
+    Settings settings,
+  ) {
+    final chapters = chaptersAsync.valueOrNull ?? [];
+    final preferredLanguage = settings.preferredLanguage;
+
+    VoidCallback? onPrev;
+    VoidCallback? onNext;
+    if (chapters.isNotEmpty) {
+      final prevResult =
+          _getAdjacentChapter(chapters, false, preferredLanguage);
+      final nextResult = _getAdjacentChapter(chapters, true, preferredLanguage);
+      onPrev = prevResult is _ChapterNavAvailable
+          ? () => _navigateAdjacentChapter(false, chapters, preferredLanguage)
+          : null;
+      onNext = nextResult is _ChapterNavAvailable
+          ? () => _navigateAdjacentChapter(true, chapters, preferredLanguage)
+          : null;
+    }
+
+    final pageText = (_isOnTransitionPage || totalPages == 0)
+        ? '–'
+        : '${_currentMangaPage + 1} / $totalPages';
+
+    return Container(
+      color: Colors.black87,
+      child: SafeArea(
+        top: false,
+        child: Row(
+          children: [
+            TextButton(
+              onPressed: onPrev,
+              child: Text(
+                'Prev',
+                style: TextStyle(
+                  color: onPrev != null ? Colors.white : Colors.white38,
+                ),
+              ),
+            ),
+            Expanded(
+              child: Center(
+                child: Text(
+                  pageText,
+                  style: const TextStyle(color: Colors.white, fontSize: 14),
+                ),
+              ),
+            ),
+            TextButton(
+              onPressed: onNext,
+              child: Text(
+                'Next',
+                style: TextStyle(
+                  color: onNext != null ? Colors.white : Colors.white38,
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   // ── Build ──────────────────────────────────────────────────────────────────
 
   @override
@@ -352,77 +552,140 @@ class _ReaderPageState extends ConsumerState<ReaderPage> {
         : 'paged';
     final isScrollMode = readingMode == 'scroll';
 
-    return Scaffold(
-      backgroundColor: Colors.black,
-      appBar: AppBar(
-        backgroundColor: Colors.black,
-        foregroundColor: Colors.white,
-        title: serverAsync.maybeWhen(
-          data: (server) {
-            if (_isOnTransitionPage) return const SizedBox.shrink();
-            final pages =
-                dataSaver ? server.chapter.dataSaver : server.chapter.data;
-            return Text('${_currentMangaPage + 1} / ${pages.length}');
-          },
-          orElse: () => const SizedBox.shrink(),
-        ),
-        actions: [
-          if (widget.mangaId != null)
-            IconButton(
-              icon: Icon(isScrollMode ? Icons.auto_stories : Icons.view_agenda),
-              tooltip: isScrollMode
-                  ? 'Switch to paged mode'
-                  : 'Switch to scroll mode',
-              onPressed: () => ref
-                  .read(readingModeNotifierProvider(widget.mangaId!).notifier)
-                  .toggle(),
-            ),
-        ],
-      ),
-      body: serverAsync.when(
-        loading: () {
-          // Keep the reader content visible during a server URL refresh so the
-          // scroll/page position isn't lost. Only show the spinner on first load.
-          if (_lastServer case final server?) {
-            return isScrollMode
-                ? _buildScrollContent(
-                    server, dataSaver, chaptersAsync, settings)
-                : _buildPageViewContent(
-                    server, dataSaver, chaptersAsync, settings);
-          }
-          return const Center(
-              child: CircularProgressIndicator(color: Colors.white));
-        },
-        error: (error, _) => Center(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              const Icon(Icons.cloud_off, size: 48, color: Colors.white54),
-              const SizedBox(height: 16),
-              Text(
-                'Could not load chapter.\nPlease check your connection.',
-                textAlign: TextAlign.center,
-                style: Theme.of(context)
-                    .textTheme
-                    .bodyMedium
-                    ?.copyWith(color: Colors.white70),
-              ),
-              const SizedBox(height: 24),
-              FilledButton(
-                onPressed: () =>
-                    ref.invalidate(atHomeServerProvider(_currentChapterId)),
-                child: const Text('Retry'),
-              ),
-            ],
-          ),
-        ),
-        data: (server) {
-          _lastServer = server;
+    // Chapter title for the top bar.
+    final currentChapter = chaptersAsync.valueOrNull
+        ?.where((c) => c.id == _currentChapterId)
+        .firstOrNull;
+
+    // Total pages from the live or last-known server.
+    final effectiveServer = serverAsync.valueOrNull ?? _lastServer;
+    final totalPages = effectiveServer != null
+        ? (dataSaver
+                ? effectiveServer.chapter.dataSaver
+                : effectiveServer.chapter.data)
+            .length
+        : 0;
+
+    // Reader content (PageView / ListView / loading / error).
+    final Widget readerContent = serverAsync.when(
+      loading: () {
+        // Keep the reader content visible during a server URL refresh so the
+        // scroll/page position isn't lost. Only show the spinner on first load.
+        if (_lastServer case final server?) {
           return isScrollMode
               ? _buildScrollContent(server, dataSaver, chaptersAsync, settings)
               : _buildPageViewContent(
                   server, dataSaver, chaptersAsync, settings);
-        },
+        }
+        return const Center(
+            child: CircularProgressIndicator(color: Colors.white));
+      },
+      error: (error, _) => Center(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Icon(Icons.cloud_off, size: 48, color: Colors.white54),
+            const SizedBox(height: 16),
+            Text(
+              'Could not load chapter.\nPlease check your connection.',
+              textAlign: TextAlign.center,
+              style: Theme.of(context)
+                  .textTheme
+                  .bodyMedium
+                  ?.copyWith(color: Colors.white70),
+            ),
+            const SizedBox(height: 24),
+            FilledButton(
+              onPressed: () =>
+                  ref.invalidate(atHomeServerProvider(_currentChapterId)),
+              child: const Text('Retry'),
+            ),
+          ],
+        ),
+      ),
+      data: (server) {
+        _lastServer = server;
+        return isScrollMode
+            ? _buildScrollContent(server, dataSaver, chaptersAsync, settings)
+            : _buildPageViewContent(server, dataSaver, chaptersAsync, settings);
+      },
+    );
+
+    return Scaffold(
+      backgroundColor: Colors.black,
+      body: Stack(
+        fit: StackFit.expand,
+        children: [
+          // Content layer (PageView / ListView / loading / error).
+          readerContent,
+          // ── Top bar ────────────────────────────────────────────────────────
+          Positioned(
+            top: 0,
+            left: 0,
+            right: 0,
+            child: IgnorePointer(
+              ignoring: !_barsVisible,
+              child: AnimatedSwitcher(
+                duration: const Duration(milliseconds: 250),
+                transitionBuilder: (child, animation) => FadeTransition(
+                  opacity: animation,
+                  child: SlideTransition(
+                    position: Tween<Offset>(
+                      begin: const Offset(0, -1),
+                      end: Offset.zero,
+                    ).animate(CurvedAnimation(
+                      parent: animation,
+                      curve: Curves.easeInOut,
+                    )),
+                    child: child,
+                  ),
+                ),
+                child: _barsVisible
+                    ? SizedBox(
+                        key: const ValueKey('topBar'),
+                        child: _buildTopBar(context, currentChapter),
+                      )
+                    : const SizedBox.shrink(key: ValueKey('topBarEmpty')),
+              ),
+            ),
+          ),
+          // ── Bottom bar ─────────────────────────────────────────────────────
+          Positioned(
+            bottom: 0,
+            left: 0,
+            right: 0,
+            child: IgnorePointer(
+              ignoring: !_barsVisible,
+              child: AnimatedSwitcher(
+                duration: const Duration(milliseconds: 250),
+                transitionBuilder: (child, animation) => FadeTransition(
+                  opacity: animation,
+                  child: SlideTransition(
+                    position: Tween<Offset>(
+                      begin: const Offset(0, 1),
+                      end: Offset.zero,
+                    ).animate(CurvedAnimation(
+                      parent: animation,
+                      curve: Curves.easeInOut,
+                    )),
+                    child: child,
+                  ),
+                ),
+                child: _barsVisible
+                    ? SizedBox(
+                        key: const ValueKey('bottomBar'),
+                        child: _buildBottomBar(
+                          context,
+                          totalPages,
+                          chaptersAsync,
+                          settings,
+                        ),
+                      )
+                    : const SizedBox.shrink(key: ValueKey('bottomBarEmpty')),
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -459,6 +722,7 @@ class _ReaderPageState extends ConsumerState<ReaderPage> {
             isThirdParty: server.isThirdParty,
             apiService: ref.read(mangaDexApiServiceProvider),
             onLoadFailure: _onImageLoadFailure,
+            onTap: _toggleBars,
           );
         }
         // Footer: end-of-chapter navigation (same content as paged transitions).
@@ -518,6 +782,7 @@ class _ReaderPageState extends ConsumerState<ReaderPage> {
             isThirdParty: server.isThirdParty,
             apiService: ref.read(mangaDexApiServiceProvider),
             onLoadFailure: _onImageLoadFailure,
+            onTap: _toggleBars,
           );
         }
       },

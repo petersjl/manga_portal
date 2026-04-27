@@ -118,6 +118,12 @@ void main() {
       await tester.pumpWidget(_buildReader());
       await settle(tester);
 
+      // Bars are hidden by default — tap to show them.
+      await tester.tapAt(const Offset(400, 300));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
+      await tester.pump();
+
       expect(find.text('1 / 3'), findsOneWidget);
     });
 
@@ -129,6 +135,12 @@ void main() {
         },
       ));
       await settle(tester);
+
+      // Bars are hidden by default — tap to show them.
+      await tester.tapAt(const Offset(400, 300));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
+      await tester.pump();
 
       // Progress restore is async: jump happens after all the above pumps.
       expect(find.text('3 / 3'), findsOneWidget);
@@ -159,9 +171,12 @@ void main() {
 
       // Fling the PageView left to go to the next manga page.
       await tester.fling(find.byType(PageView), const Offset(-400, 0), 1000);
-      // Advance time enough for the scroll animation to finish.
+      // Advance time enough for the scroll animation and async prefs write to
+      // complete (SharedPreferences mock resolves via microtasks).
+      await tester.pump();
       await tester.pump(const Duration(milliseconds: 400));
-      // Process any resulting microtasks / state updates.
+      for (var i = 0; i < 10; i++) await tester.pump();
+      await tester.pump(const Duration(milliseconds: 100));
       for (var i = 0; i < 5; i++) await tester.pump();
 
       // Verify SharedPreferences was written (progress saved).

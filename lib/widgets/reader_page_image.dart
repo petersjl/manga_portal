@@ -14,6 +14,7 @@ class ReaderPageImage extends StatefulWidget {
     required this.isThirdParty,
     required this.apiService,
     required this.onLoadFailure,
+    this.onTap,
   });
 
   /// The full resolved page URL.
@@ -27,6 +28,9 @@ class ReaderPageImage extends StatefulWidget {
   /// Called when the image fails to load so the parent can refresh the
   /// at-home server URL before retrying.
   final VoidCallback onLoadFailure;
+
+  /// Optional tap callback (used by the reader to toggle info bars).
+  final VoidCallback? onTap;
 
   @override
   State<ReaderPageImage> createState() => _ReaderPageImageState();
@@ -74,7 +78,7 @@ class _ReaderPageImageState extends State<ReaderPageImage> {
 
   @override
   Widget build(BuildContext context) {
-    return Image(
+    final image = Image(
       image: CachedNetworkImageProvider(widget.url),
       fit: BoxFit.contain,
       // frameBuilder lets us distinguish synchronous (memory-cached) loads
@@ -101,5 +105,9 @@ class _ReaderPageImageState extends State<ReaderPageImage> {
         );
       },
     );
+    if (widget.onTap != null) {
+      return GestureDetector(onTap: widget.onTap, child: image);
+    }
+    return image;
   }
 }

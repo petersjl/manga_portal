@@ -33,8 +33,17 @@ void main() {
     await tester.pumpAndSettle();
   }
 
-  testWidgets(
-      'reading mode selector appears on detail page and defaults to Paged',
+  /// Ensures the reader info bars are visible. If they are already visible
+  /// (settings cog is in the tree) this is a no-op; otherwise taps the
+  /// centre of the reader content to show them.
+  Future<void> showBars(WidgetTester tester) async {
+    if (find.byIcon(Icons.settings).evaluate().isEmpty) {
+      await tester.tapAt(const Offset(200, 400));
+      await tester.pump(const Duration(milliseconds: 350));
+    }
+  }
+
+  testWidgets('bars are hidden by default; tap shows them with settings cog',
       (tester) async {
     app.main();
     await tester.pumpAndSettle();
@@ -42,15 +51,23 @@ void main() {
     await tester.pumpAndSettle();
 
     await openDetailPage(tester);
+    await tester.tap(find.text('Ch. 2'));
+    await tester.pumpAndSettle();
 
-    // SegmentedButton shows "Paged" and "Scroll" options.
-    expect(find.text('Paged'), findsOneWidget);
-    expect(find.text('Scroll'), findsOneWidget);
-    expect(find.text('Reading mode'), findsOneWidget);
+    // Bars hidden by default.
+    expect(find.byIcon(Icons.arrow_back), findsNothing);
+    expect(find.byIcon(Icons.settings), findsNothing);
+
+    // Tap to reveal bars.
+    await tester.tapAt(const Offset(200, 400));
+    await tester.pump(const Duration(milliseconds: 350));
+
+    expect(find.byIcon(Icons.arrow_back), findsOneWidget);
+    expect(find.byIcon(Icons.settings), findsOneWidget);
   });
 
   testWidgets(
-      'switching to scroll mode on detail page opens reader in ListView',
+      'switching to scroll mode via settings sheet opens reader in ListView',
       (tester) async {
     app.main();
     await tester.pumpAndSettle();
@@ -58,28 +75,35 @@ void main() {
     await tester.pumpAndSettle();
 
     await openDetailPage(tester);
-
-    // Switch to Scroll mode.
-    await tester.tap(find.text('Scroll'));
-    await tester.pumpAndSettle();
 
     // Open the reader via the chapter list.
     await tester.tap(find.text('Ch. 2'));
     await tester.pumpAndSettle();
 
-    // In scroll mode, the body is a ListView (not a PageView).
+    // Default mode: PageView.
+    expect(find.byType(PageView), findsOneWidget);
+    expect(find.byType(ListView), findsNothing);
+
+    // Show bars, then open settings.
+    await showBars(tester);
+    await tester.tap(find.byIcon(Icons.settings));
+    await tester.pumpAndSettle();
+
+    // Bottom sheet is open — switch to Scroll.
+    expect(find.text('Paged'), findsOneWidget);
+    await tester.tap(find.text('Scroll'));
+    await tester.pumpAndSettle();
+
+    // Dismiss the sheet.
+    await tester.tapAt(const Offset(200, 100));
+    await tester.pumpAndSettle();
+
+    // In scroll mode, the body is a ListView.
     expect(find.byType(ListView), findsOneWidget);
     expect(find.byType(PageView), findsNothing);
-
-    // Page counter is still shown.
-    expect(find.textContaining('1 / 5'), findsOneWidget);
-
-    // Toggle button shows the "paged" icon (auto_stories), indicating
-    // "tap to switch back to paged mode".
-    expect(find.byIcon(Icons.auto_stories), findsOneWidget);
   });
 
-  testWidgets('reader toggle button switches from paged to scroll in-place',
+  testWidgets('settings sheet switches mode and reflects selection',
       (tester) async {
     app.main();
     await tester.pumpAndSettle();
@@ -88,25 +112,33 @@ void main() {
 
     await openDetailPage(tester);
 
-    // Open in the default paged mode.
+    // Open reader in default paged mode.
     await tester.tap(find.text('Ch. 2'));
     await tester.pumpAndSettle();
 
     expect(find.byType(PageView), findsOneWidget);
-    expect(find.byType(ListView), findsNothing);
 
-    // Tap the toggle in the app bar (view_agenda icon = "switch to scroll").
-    await tester.tap(find.byIcon(Icons.view_agenda));
+    // Open settings sheet and switch to Scroll.
+    await showBars(tester);
+    await tester.tap(find.byIcon(Icons.settings));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Scroll'));
     await tester.pumpAndSettle();
 
-    // Now in scroll mode.
+    // Close sheet and verify ListView.
+    await tester.tapAt(const Offset(200, 100));
+    await tester.pumpAndSettle();
     expect(find.byType(ListView), findsOneWidget);
-    expect(find.byType(PageView), findsNothing);
 
-    // Toggle back to paged.
-    await tester.tap(find.byIcon(Icons.auto_stories));
+    // Switch back to Paged via sheet.
+    await showBars(tester);
+    await tester.tap(find.byIcon(Icons.settings));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Paged'));
     await tester.pumpAndSettle();
 
+    await tester.tapAt(const Offset(200, 100));
+    await tester.pumpAndSettle();
     expect(find.byType(PageView), findsOneWidget);
     expect(find.byType(ListView), findsNothing);
   });
@@ -120,17 +152,27 @@ void main() {
 
     await openDetailPage(tester);
 
-    // Switch to Scroll and remember it.
+    // Open reader and switch to Scroll via the settings sheet.
+    await tester.tap(find.text('Ch. 2'));
+    await tester.pumpAndSettle();
+
+    await showBars(tester);
+    await tester.tap(find.byIcon(Icons.settings));
+    await tester.pumpAndSettle();
     await tester.tap(find.text('Scroll'));
     await tester.pumpAndSettle();
-
-    // Navigate back to Library then re-open the detail page.
-    await tester.tap(find.byTooltip('Back'));
+    // Dismiss sheet.
+    await tester.tapAt(const Offset(200, 100));
     await tester.pumpAndSettle();
-    await openDetailPage(tester);
 
-    // "Scroll" should still be selected.
-    // Open reader and verify it uses ListView.
+    // Navigate back to the manga detail page and re-open the same chapter.
+    // context.pop() from the reader returns to MangaDetailPage (outside the
+    // shell, so there is no bottom nav bar on that screen).
+    await showBars(tester);
+    await tester.tap(find.byIcon(Icons.arrow_back));
+    await tester.pumpAndSettle();
+
+    // Re-open the reader directly from the detail page.
     await tester.tap(find.text('Ch. 2'));
     await tester.pumpAndSettle();
 

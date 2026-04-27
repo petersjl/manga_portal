@@ -98,29 +98,72 @@ void main() {
     expect(find.byType(PageView), findsNothing);
   });
 
-  testWidgets('mode toggle button appears in app bar when mangaId is set',
+  testWidgets('bars are hidden by default', (tester) async {
+    await tester.pumpWidget(_buildReader(tester, mode: 'paged'));
+    await _settle(tester);
+
+    // Back button and settings cog should not be visible (bars are hidden).
+    expect(find.byIcon(Icons.arrow_back), findsNothing);
+    expect(find.byIcon(Icons.settings), findsNothing);
+    // Page counter text is also not shown yet.
+    expect(find.text('1 / 3'), findsNothing);
+  });
+
+  testWidgets('tapping content area shows bars', (tester) async {
+    await tester.pumpWidget(_buildReader(tester, mode: 'paged'));
+    await _settle(tester);
+
+    // Tap the centre of the screen to toggle bars on.
+    await tester.tapAt(const Offset(400, 300));
+    await tester.pump(); // process tap + start animation
+    await tester.pump(const Duration(milliseconds: 300)); // complete animation
+    await tester.pump(); // cleanup frame
+
+    expect(find.byIcon(Icons.arrow_back), findsOneWidget);
+    expect(find.byIcon(Icons.settings), findsOneWidget);
+    expect(find.text('1 / 3'), findsOneWidget);
+  });
+
+  testWidgets('tapping content area again hides bars', (tester) async {
+    await tester.pumpWidget(_buildReader(tester, mode: 'paged'));
+    await _settle(tester);
+
+    // Show bars.
+    await tester.tapAt(const Offset(400, 300));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 300));
+    await tester.pump();
+    expect(find.byIcon(Icons.arrow_back), findsOneWidget);
+
+    // Hide bars.
+    await tester.tapAt(const Offset(400, 300));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 300));
+    await tester.pump();
+    expect(find.byIcon(Icons.arrow_back), findsNothing);
+  });
+
+  testWidgets('settings cog opens bottom sheet with mode selector',
       (tester) async {
     await tester.pumpWidget(_buildReader(tester, mode: 'paged'));
     await _settle(tester);
 
-    // In paged mode the toggle shows the scroll-mode icon (view_agenda),
-    // indicating "tap to switch to scroll".
-    expect(find.byIcon(Icons.view_agenda), findsOneWidget);
-  });
+    // Show bars first.
+    await tester.tapAt(const Offset(400, 300));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 300));
+    await tester.pump();
 
-  testWidgets('paged mode shows page number indicator in app bar',
-      (tester) async {
-    await tester.pumpWidget(_buildReader(tester, mode: 'paged'));
-    await _settle(tester);
+    // Tap the settings icon.
+    await tester.tap(find.byIcon(Icons.settings));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 300));
+    await tester.pump();
 
-    expect(find.text('1 / 3'), findsOneWidget);
-  });
-
-  testWidgets('scroll mode shows page number indicator in app bar',
-      (tester) async {
-    await tester.pumpWidget(_buildReader(tester, mode: 'scroll'));
-    await _settle(tester);
-
-    expect(find.text('1 / 3'), findsOneWidget);
+    // Bottom sheet should contain the mode selector and label.
+    expect(find.text('Reader settings'), findsOneWidget);
+    expect(find.text('Reading mode'), findsOneWidget);
+    expect(find.text('Paged'), findsOneWidget);
+    expect(find.text('Scroll'), findsOneWidget);
   });
 }

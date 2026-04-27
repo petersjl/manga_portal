@@ -76,18 +76,28 @@ void main() {
     }
   }
 
+  /// Ensures the reader info bars are visible. Idempotent — no-op if the
+  /// settings cog is already in the tree.
+  Future<void> showBars(WidgetTester tester) async {
+    if (find.byIcon(Icons.settings).evaluate().isEmpty) {
+      await tester.tapAt(const Offset(200, 400));
+      await tester.pump(const Duration(milliseconds: 350));
+    }
+  }
+
   // ── Existing tests ──────────────────────────────────────────────────────────
 
   testWidgets('reading progress is saved and restored', (tester) async {
     await openChapter1(tester);
-
+    await showBars(tester);
     expect(find.text('1 / 5'), findsOneWidget);
 
-    // Swipe left twice to reach page 3.
+    // Swipe left twice to reach page 3 (page change hides bars).
     await swipeLeft(tester, count: 2);
+    await showBars(tester);
     expect(find.text('3 / 5'), findsOneWidget);
 
-    // Navigate back to the detail page.
+    // Navigate back to the detail page (bars already visible from showBars).
     await tester.tap(find.byTooltip('Back'));
     await tester.pumpAndSettle();
 
@@ -95,7 +105,7 @@ void main() {
     await tester.tap(find.textContaining('Ch. 1').first);
     await tester.pumpAndSettle();
     await tester.pumpAndSettle(); // extra pump for async progress restore
-
+    await showBars(tester);
     expect(find.text('3 / 5'), findsOneWidget);
   });
 
@@ -115,7 +125,7 @@ void main() {
 
     await tester.tap(find.text('Start Reading'));
     await tester.pumpAndSettle();
-
+    await showBars(tester);
     expect(find.text('1 / 5'), findsOneWidget);
   });
 
@@ -133,7 +143,8 @@ void main() {
     await tester.tap(find.text('Start Reading'));
     await tester.pumpAndSettle();
 
-    // Go back to the detail page.
+    // Go back to the detail page (show bars first — hidden after chapter load).
+    await showBars(tester);
     await tester.tap(find.byTooltip('Back'));
     await tester.pumpAndSettle();
 
@@ -149,11 +160,12 @@ void main() {
   testWidgets('"Continue" button opens reader at saved page', (tester) async {
     await openChapter1(tester);
 
-    // Read to page 3.
+    // Read to page 3 (page change hides bars).
     await swipeLeft(tester, count: 2);
+    await showBars(tester);
     expect(find.text('3 / 5'), findsOneWidget);
 
-    // Go back.
+    // Go back (bars already visible from showBars).
     await tester.tap(find.byTooltip('Back'));
     await tester.pumpAndSettle();
 
@@ -164,7 +176,7 @@ void main() {
     await tester.tap(find.textContaining('Continue Ch. 1'));
     await tester.pumpAndSettle();
     await tester.pumpAndSettle(); // wait for progress restore
-
+    await showBars(tester);
     // Should land on page 3.
     expect(find.text('3 / 5'), findsOneWidget);
   });
@@ -172,11 +184,13 @@ void main() {
   testWidgets(
       'opening a chapter without paging leaves the in-progress chapter unchanged',
       (tester) async {
-    // First, put Ch. 1 in-progress by reading to page 2.
+    // First, put Ch. 1 in-progress by reading to page 2 (page change hides bars).
     await openChapter1(tester);
     await swipeLeft(tester);
+    await showBars(tester);
     expect(find.text('2 / 5'), findsOneWidget);
 
+    // Go back (bars already visible).
     await tester.tap(find.byTooltip('Back'));
     await tester.pumpAndSettle();
     expect(find.textContaining('Continue Ch. 1'), findsOneWidget);
@@ -184,9 +198,10 @@ void main() {
     // Open Ch. 2 directly from the chapter list without swiping any pages.
     await tester.tap(find.textContaining('Ch. 2').first);
     await tester.pumpAndSettle();
+    await showBars(tester);
     expect(find.text('1 / 5'), findsOneWidget);
 
-    // Immediately go back.
+    // Immediately go back (bars already visible).
     await tester.tap(find.byTooltip('Back'));
     await tester.pumpAndSettle();
 
@@ -199,11 +214,14 @@ void main() {
     // Read to page 3 in Ch. 1 to establish some progress.
     await openChapter1(tester);
     await swipeLeft(tester, count: 2);
+    // Show bars so the reader back button is in the tree.
+    await showBars(tester);
     await tester.tap(find.byTooltip('Back'));
     await tester.pumpAndSettle();
     expect(find.textContaining('Continue Ch. 1'), findsOneWidget);
 
     // Go back to shell (search page) so the bottom nav bar is visible.
+    // MangaDetailPage has its own AppBar back button — no showBars needed.
     await tester.tap(find.byTooltip('Back'));
     await tester.pumpAndSettle();
 
