@@ -372,6 +372,70 @@ _All tasks and tests complete. Verified on emulator: real MangaDex search return
 
 ---
 
+## Feature 9 — Local Database Foundation 🚧 (In Progress)
+
+**Goal**: Introduce a structured local database layer before offline downloads so download metadata, queue state, and file mapping are robust and queryable.
+
+### Why this comes first
+
+- Downloaded chapters need durable metadata: status (`queued/downloading/completed/failed`), progress, errors, file paths, and integrity checks.
+- `SharedPreferences` is fine for small key/value settings but becomes brittle for queue orchestration and large offline libraries.
+- A database-first foundation reduces rework when implementing pause/resume, cleanup, and "downloaded only" filtering.
+
+### Tasks
+
+- [ ] Add DB package(s) in `pubspec.yaml` (`drift` + `sqlite3_flutter_libs` + build tooling) and run codegen.
+- [ ] Create local DB module (schema + DAOs) for:
+  - manga table (id, title, cover url cache)
+  - chapters table (id, mangaId, chapter number/title/language/group)
+  - download jobs table (chapterId, status, progress, bytes, error, timestamps)
+  - downloaded pages table (chapterId, page index, local file path, checksum/size)
+- [ ] Add a storage abstraction service layer so providers/UI do not import DB directly.
+- [ ] Migrate existing progress/library/settings persistence behind service interfaces (keep behavior unchanged).
+- [ ] Add migration/versioning strategy for future schema changes.
+
+### Tests
+
+- [ ] Unit tests for DAO CRUD and migrations.
+- [ ] Widget smoke tests to ensure existing library/progress/settings behavior remains unchanged after backend swap.
+
+---
+
+## Feature 10 — Offline Chapter Downloads
+
+**Goal**: Let users download selected chapters to local storage and read them fully offline with zero network calls during reading.
+
+### Tasks
+
+- [ ] Add download UI on `MangaDetailPage` and/or chapter rows:
+  - queue/download/remove chapter
+  - per-chapter status chip (Not downloaded / Queued / Downloading / Downloaded / Failed)
+- [ ] Implement `DownloadService`:
+  - fetch chapter pages once and save image files under app documents storage
+  - write all metadata/state to DB tables
+  - bounded concurrency and retry/backoff on transient failures
+  - mark completed only when all pages are present and validated
+- [ ] Reader offline-first resolution:
+  - if chapter is downloaded, load local files only
+  - do not call `at-home/server` or image network endpoints for downloaded chapters
+  - fallback to online flow only when chapter is not downloaded
+- [ ] Add storage management:
+  - remove one chapter download
+  - remove all downloads for a manga
+  - compute and display download size used
+- [ ] Add optional "Downloaded only" filter for library/detail chapter lists.
+
+### Tests
+
+- [ ] Unit tests for download state machine and retry logic.
+- [ ] Widget tests for chapter download status rendering.
+- [ ] Integration test:
+  - download chapter online
+  - relaunch / disable network
+  - open downloaded chapter and read pages with no network requests
+
+---
+
 ## Stretch Goal — Self-Hosted Server Support (Future, No Implementation Yet)
 
 **Goal**: Allow users to point the app at one or more self-hosted manga servers that implement the same API contract as MangaDex. Searches and browse flows would aggregate results from MangaDex and any configured custom servers.
@@ -397,6 +461,8 @@ _All tasks and tests complete. Verified on emulator: real MangaDex search return
 ---
 
 ## Stretch Goal — Local Database Migration (Future)
+
+Status note: Superseded by Feature 9 detour above. Keep this section only as historical context.
 
 **Goal**: Move from `SharedPreferences` to a structured local database (`drift` or `sqflite`) to support full reading history, download queues, and richer library management.
 
