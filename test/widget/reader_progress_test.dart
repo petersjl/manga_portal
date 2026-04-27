@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 
+import 'package:manga_portal/database/app_database.dart';
 import 'package:manga_portal/models/chapter.dart';
 import 'package:manga_portal/models/chapter_pages.dart';
 import 'package:manga_portal/pages/reader_page.dart';
@@ -67,6 +67,26 @@ List<Chapter> _fakeChaptersLangUnavailable() => [
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
+/// Populate an in-memory test database with data from prefsValues.
+/// Handles legacy format: 'progress_<mangaId>_chapter' and 'progress_<mangaId>_page'.
+Future<void> _populateTestDb(
+  AppDatabase db,
+  Map<String, Object> prefsValues,
+) async {
+  for (final entry in prefsValues.entries) {
+    if (entry.key.startsWith('progress_') && entry.key.endsWith('_chapter')) {
+      final mangaId = entry.key
+          .substring('progress_'.length, entry.key.length - '_chapter'.length);
+      final chapterId = entry.value as String?;
+      final pageKey = 'progress_${mangaId}_page';
+      final page = prefsValues[pageKey] as int? ?? 0;
+      if (chapterId != null) {
+        await db.saveProgress(mangaId, chapterId, page);
+      }
+    }
+  }
+}
+
 Widget _buildReader({
   String chapterId = _ch1Id,
   String? mangaId = _testMangaId,
@@ -85,9 +105,13 @@ Widget _buildReader({
         chapterFeedProvider(mangaId).overrideWith(
           (ref) async => chapters ?? _fakeChapters(),
         ),
+      appDatabaseProvider.overrideWith((ref) {
+        return AppDatabase.forTesting();
+      }),
       localProgressServiceProvider.overrideWith((ref) async {
-        SharedPreferences.setMockInitialValues(prefsValues);
-        return LocalProgressService(await SharedPreferences.getInstance());
+        final db = ref.watch(appDatabaseProvider);
+        await _populateTestDb(db, prefsValues);
+        return LocalProgressService.create(db);
       }),
     ],
     child: MaterialApp(
@@ -147,7 +171,7 @@ void main() {
     });
 
     testWidgets('saves progress after page change', (tester) async {
-      SharedPreferences.setMockInitialValues({});
+      final testDb = AppDatabase.forTesting();
       await tester.pumpWidget(
         ProviderScope(
           overrides: [
@@ -157,9 +181,9 @@ void main() {
             chapterFeedProvider(_testMangaId).overrideWith(
               (ref) async => _fakeChapters(),
             ),
+            appDatabaseProvider.overrideWith((ref) => testDb),
             localProgressServiceProvider.overrideWith((ref) async {
-              return LocalProgressService(
-                  await SharedPreferences.getInstance());
+              return LocalProgressService.create(testDb);
             }),
           ],
           child: const MaterialApp(
@@ -171,18 +195,18 @@ void main() {
 
       // Fling the PageView left to go to the next manga page.
       await tester.fling(find.byType(PageView), const Offset(-400, 0), 1000);
-      // Advance time enough for the scroll animation and async prefs write to
-      // complete (SharedPreferences mock resolves via microtasks).
+      // Advance time enough for the scroll animation and async DB write to
+      // complete.
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 400));
       for (var i = 0; i < 10; i++) await tester.pump();
       await tester.pump(const Duration(milliseconds: 100));
       for (var i = 0; i < 5; i++) await tester.pump();
 
-      // Verify SharedPreferences was written (progress saved).
-      final prefs = await SharedPreferences.getInstance();
-      expect(prefs.getString('progress_${_testMangaId}_chapter'), _ch1Id);
-      expect(prefs.getInt('progress_${_testMangaId}_page'), greaterThan(0));
+      // Verify database was written (progress saved).
+      final progress = await testDb.getProgress(_testMangaId);
+      expect(progress.chapterId, _ch1Id);
+      expect(progress.pageIndex, greaterThan(0));
     });
   });
 
@@ -212,6 +236,7 @@ void main() {
     testWidgets('swiping back from first page shows prev chapter transition',
         (tester) async {
       // Start on chapter 2 so there is a chapter 1 to go back to.
+      final testDb = AppDatabase.forTesting();
       await tester.pumpWidget(
         ProviderScope(
           overrides: [
@@ -221,10 +246,9 @@ void main() {
             chapterFeedProvider(_testMangaId).overrideWith(
               (ref) async => _fakeChapters(),
             ),
+            appDatabaseProvider.overrideWith((ref) => testDb),
             localProgressServiceProvider.overrideWith((ref) async {
-              SharedPreferences.setMockInitialValues({});
-              return LocalProgressService(
-                  await SharedPreferences.getInstance());
+              return LocalProgressService.create(testDb);
             }),
           ],
           child: const MaterialApp(

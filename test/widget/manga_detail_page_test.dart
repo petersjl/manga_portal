@@ -3,7 +3,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:shared_preferences/shared_preferences.dart';
+import 'package:manga_portal/database/app_database.dart';
 import 'package:manga_portal/models/chapter.dart';
 import 'package:manga_portal/models/manga.dart';
 import 'package:manga_portal/pages/manga_detail_page.dart';
@@ -50,13 +50,14 @@ final _fakeChapters = [
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
 Widget _buildApp(List<Override> overrides) {
-  SharedPreferences.setMockInitialValues({});
+  final testDb = AppDatabase.forTesting();
   return ProviderScope(
     overrides: [
       // Provide a real (empty) LocalProgressService so progress tracking
-      // works without making real SharedPreferences calls.
+      // works with the in-memory database.
+      appDatabaseProvider.overrideWith((ref) => testDb),
       localProgressServiceProvider.overrideWith((ref) async {
-        return LocalProgressService(await SharedPreferences.getInstance());
+        return LocalProgressService.create(testDb);
       }),
       ...overrides,
     ],

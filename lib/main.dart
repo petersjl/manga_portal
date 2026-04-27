@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'app.dart';
-import 'providers/api_providers.dart';
 import 'providers/settings_provider.dart';
 
 void main() => runApp(const ProviderScope(child: MangaPortal()));
@@ -12,7 +11,6 @@ class MangaPortal extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    ref.watch(storageMigrationProvider);
     final themeMode = ref.watch(
       settingsNotifierProvider.select((s) => s.themeMode),
     );

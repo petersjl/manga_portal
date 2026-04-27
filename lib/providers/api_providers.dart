@@ -1,6 +1,5 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 
 import '../database/app_database.dart';
 import '../models/chapter.dart';
@@ -8,7 +7,6 @@ import '../models/chapter_pages.dart';
 import '../models/manga.dart';
 import '../services/local_progress.dart';
 import '../services/mangadex_api.dart';
-import '../services/storage_migration_service.dart';
 import 'settings_provider.dart';
 
 part 'api_providers.g.dart';
@@ -31,17 +29,9 @@ AppDatabase appDatabase(Ref ref) {
 }
 
 @riverpod
-Future<void> storageMigration(Ref ref) async {
-  final prefs = await SharedPreferences.getInstance();
-  final db = ref.watch(appDatabaseProvider);
-  final migration = StorageMigrationService(db, prefs);
-  await migration.migrateIfNeeded();
-}
-
-@riverpod
 Future<LocalProgressService> localProgressService(Ref ref) async {
-  final prefs = await SharedPreferences.getInstance();
-  return LocalProgressService(prefs);
+  final db = ref.watch(appDatabaseProvider);
+  return LocalProgressService.create(db);
 }
 
 @riverpod

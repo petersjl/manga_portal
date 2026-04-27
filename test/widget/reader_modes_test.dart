@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 
+import 'package:manga_portal/database/app_database.dart';
 import 'package:manga_portal/models/chapter.dart';
 import 'package:manga_portal/models/chapter_pages.dart';
 import 'package:manga_portal/pages/reader_page.dart';
@@ -59,15 +59,16 @@ Future<void> _settle(WidgetTester tester) async {
 }
 
 Widget _buildReader(WidgetTester tester, {required String mode}) {
-  SharedPreferences.setMockInitialValues({});
+  final testDb = AppDatabase.forTesting();
 
   return ProviderScope(
     overrides: [
       atHomeServerProvider(_chId).overrideWith((ref) async => _fakeServer()),
       chapterFeedProvider(_testMangaId)
           .overrideWith((ref) async => _fakeChapters()),
+      appDatabaseProvider.overrideWith((ref) => testDb),
       localProgressServiceProvider.overrideWith((ref) async {
-        return LocalProgressService(await SharedPreferences.getInstance());
+        return LocalProgressService.create(testDb);
       }),
       readingModeNotifierProvider(_testMangaId).overrideWith(
         () => _FakeModeNotifier(mode),

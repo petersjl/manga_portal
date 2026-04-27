@@ -121,6 +121,12 @@ class DownloadedPagesTable extends Table {
 class AppDatabase extends _$AppDatabase {
   AppDatabase() : super(_openConnection());
 
+  /// Test constructor for in-memory database.
+  ///
+  /// Each test creates its own isolated in-memory database, so Drift warnings
+  /// about multiple database instances can be safely ignored in test contexts.
+  AppDatabase.forTesting() : super(NativeDatabase.memory());
+
   @override
   int get schemaVersion => 1;
 
@@ -185,6 +191,10 @@ class AppDatabase extends _$AppDatabase {
     return (chapterId: row?.chapterId, pageIndex: row?.pageIndex ?? 0);
   }
 
+  Future<List<MangaProgressTableData>> allProgressRows() {
+    return select(mangaProgressTable).get();
+  }
+
   Future<void> markChapterRead(String mangaId, String chapterId) {
     return into(readChaptersTable).insertOnConflictUpdate(
       ReadChaptersTableCompanion.insert(
@@ -200,6 +210,10 @@ class AppDatabase extends _$AppDatabase {
           ..where((t) => t.mangaId.equals(mangaId)))
         .get();
     return rows.map((r) => r.chapterId).toSet();
+  }
+
+  Future<List<ReadChaptersTableData>> allReadChaptersRows() {
+    return select(readChaptersTable).get();
   }
 
   Future<void> saveReadingMode(String mangaId, String mode) {
@@ -220,6 +234,15 @@ class AppDatabase extends _$AppDatabase {
     if (mode == 'paged') return 'ltr';
     if (mode == 'ltr' || mode == 'rtl' || mode == 'scroll') return mode!;
     return 'ltr';
+  }
+
+  Future<List<ReadingModesTableData>> allReadingModesRows() {
+    return select(readingModesTable).get();
+  }
+
+  Future<void> clearProgressData() async {
+    await delete(mangaProgressTable).go();
+    await delete(readChaptersTable).go();
   }
 }
 

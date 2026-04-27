@@ -3,7 +3,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:manga_portal/pages/settings_page.dart';
 import 'package:manga_portal/providers/settings_provider.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 
 // ── Fake notifier ─────────────────────────────────────────────────────────────
 
@@ -32,10 +31,6 @@ Widget _buildApp([Settings? initial]) {
 // ── Tests ─────────────────────────────────────────────────────────────────────
 
 void main() {
-  setUp(() {
-    SharedPreferences.setMockInitialValues({});
-  });
-
   group('SettingsPage', () {
     testWidgets('renders all sections with default values', (tester) async {
       await tester.pumpWidget(_buildApp());

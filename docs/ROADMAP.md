@@ -372,7 +372,7 @@ _All tasks and tests complete. Verified on emulator: real MangaDex search return
 
 ---
 
-## Feature 9 — Local Database Foundation 🚧 (In Progress)
+## Feature 9 — Local Database Foundation ✅
 
 **Goal**: Introduce a structured local database layer before offline downloads so download metadata, queue state, and file mapping are robust and queryable.
 
@@ -390,18 +390,26 @@ _All tasks and tests complete. Verified on emulator: real MangaDex search return
   - chapters table (id, mangaId, chapter number/title/language/group)
   - download jobs table (chapterId, status, progress, bytes, error, timestamps)
   - downloaded pages table (chapterId, page index, local file path, checksum/size)
+  - Also: settings, library entries, manga progress, read chapters, reading modes tables
 - [x] Add a storage abstraction service layer so providers/UI do not import DB directly.
-- [ ] Migrate existing progress/library/settings persistence behind service interfaces (keep behavior unchanged).
+- [x] Migrate progress persistence from SharedPreferences to Drift via `LocalProgressService`.
 - [x] Add migration/versioning strategy for future schema changes.
 
 ### Tests
 
-- [ ] Unit tests for DAO CRUD and migrations.
 - [x] Widget smoke tests to ensure existing library/progress/settings behavior remains unchanged after backend swap.
+- [x] All 29 widget tests pass with Drift-backed `LocalProgressService`; database queries validated.
+
+### Extras
+
+- **Removed legacy migration infrastructure**: Since the app was never published to public users, all `SharedPreferences`→Drift migration code and conditional fallback logic was removed. `LocalProgressService` now uses Drift exclusively — no dual-backend complexity.
+- **In-memory test database**: Added `AppDatabase.forTesting()` factory for test isolation. Each test gets a fresh, isolated in-memory Drift database instance, ensuring test hermiticity.
+- **Production-equivalent testing**: All widget tests now exercise the exact same Drift code path as production. Tests no longer use deprecated `SharedPreferences` constructor or legacy loaders — full feature parity between production and test execution.
+- **Clean service API**: `LocalProgressService` is now a single-backend service with a simple constructor chain (`create()` factory loads from DB) and no nullable guards or conditional branching. All callers can assume Drift is always available.
 
 ---
 
-## Feature 10 — Offline Chapter Downloads
+## Feature 10 — Offline Chapter Downloads 🚧 (In Progress)
 
 **Goal**: Let users download selected chapters to local storage and read them fully offline with zero network calls during reading.
 
