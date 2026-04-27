@@ -12,33 +12,35 @@ class LibraryPage extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final libraryAsync = ref.watch(libraryNotifierProvider);
 
-    return libraryAsync.when(
-      loading: () => const Center(child: CircularProgressIndicator()),
-      error: (_, __) => const Center(
-        child: Text('Could not load library.'),
+    return SafeArea(
+      child: libraryAsync.when(
+        loading: () => const Center(child: CircularProgressIndicator()),
+        error: (_, __) => const Center(
+          child: Text('Could not load library.'),
+        ),
+        data: (entries) {
+          if (entries.isEmpty) {
+            return const _EmptyLibrary();
+          }
+          return GridView.builder(
+            padding: const EdgeInsets.all(8),
+            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+              crossAxisCount: 2,
+              childAspectRatio: 2 / 3,
+              crossAxisSpacing: 8,
+              mainAxisSpacing: 8,
+            ),
+            itemCount: entries.length,
+            itemBuilder: (context, index) {
+              final entry = entries[index];
+              return MangaCard(
+                manga: entry.toManga(),
+                onTap: () => context.push('/manga/${entry.id}'),
+              );
+            },
+          );
+        },
       ),
-      data: (entries) {
-        if (entries.isEmpty) {
-          return const _EmptyLibrary();
-        }
-        return GridView.builder(
-          padding: const EdgeInsets.all(8),
-          gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-            crossAxisCount: 2,
-            childAspectRatio: 2 / 3,
-            crossAxisSpacing: 8,
-            mainAxisSpacing: 8,
-          ),
-          itemCount: entries.length,
-          itemBuilder: (context, index) {
-            final entry = entries[index];
-            return MangaCard(
-              manga: entry.toManga(),
-              onTap: () => context.push('/manga/${entry.id}'),
-            );
-          },
-        );
-      },
     );
   }
 }
