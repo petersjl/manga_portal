@@ -90,8 +90,8 @@ void main() {
     await tester.pumpAndSettle();
 
     // Bottom sheet is open — switch to Scroll.
-    expect(find.text('Paged'), findsOneWidget);
-    await tester.tap(find.text('Scroll'));
+    expect(find.text('L->R'), findsOneWidget);
+    await tester.tap(find.text('Vertical/Scroll'));
     await tester.pumpAndSettle();
 
     // Dismiss the sheet.
@@ -122,7 +122,7 @@ void main() {
     await showBars(tester);
     await tester.tap(find.byIcon(Icons.settings));
     await tester.pumpAndSettle();
-    await tester.tap(find.text('Scroll'));
+    await tester.tap(find.text('Vertical/Scroll'));
     await tester.pumpAndSettle();
 
     // Close sheet and verify ListView.
@@ -134,7 +134,7 @@ void main() {
     await showBars(tester);
     await tester.tap(find.byIcon(Icons.settings));
     await tester.pumpAndSettle();
-    await tester.tap(find.text('Paged'));
+    await tester.tap(find.text('L->R'));
     await tester.pumpAndSettle();
 
     await tester.tapAt(const Offset(200, 100));
@@ -159,7 +159,7 @@ void main() {
     await showBars(tester);
     await tester.tap(find.byIcon(Icons.settings));
     await tester.pumpAndSettle();
-    await tester.tap(find.text('Scroll'));
+    await tester.tap(find.text('Vertical/Scroll'));
     await tester.pumpAndSettle();
     // Dismiss sheet.
     await tester.tapAt(const Offset(200, 100));

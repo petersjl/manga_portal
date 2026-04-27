@@ -47,14 +47,20 @@ class LocalProgressService {
   }
 
   /// Saves the preferred reading mode for [mangaId].
-  /// [mode] must be either 'paged' or 'scroll'.
+  /// [mode] must be one of: 'ltr', 'rtl', or 'scroll'.
   void saveReadingMode(String mangaId, String mode) {
     _prefs.setString('reading_mode_$mangaId', mode);
   }
 
-  /// Returns the saved reading mode for [mangaId], defaulting to 'paged'.
+  /// Returns the saved reading mode for [mangaId], defaulting to 'ltr'.
+  ///
+  /// Also migrates legacy values:
+  ///   'paged' -> 'ltr'
   String getReadingMode(String mangaId) {
-    return _prefs.getString('reading_mode_$mangaId') ?? 'paged';
+    final mode = _prefs.getString('reading_mode_$mangaId');
+    if (mode == 'paged') return 'ltr';
+    if (mode == 'ltr' || mode == 'rtl' || mode == 'scroll') return mode!;
+    return 'ltr';
   }
 
   /// Removes all reading progress and read-chapter history from the device.

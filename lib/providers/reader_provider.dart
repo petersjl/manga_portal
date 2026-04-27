@@ -13,8 +13,9 @@ String imageQuality(Ref ref) {
   return ref.watch(settingsNotifierProvider).imageQuality;
 }
 
-/// Persists and exposes the reading mode ('paged' or 'scroll') for a specific
-/// manga. Defaults to 'paged' on first use. Persisted to LocalProgressService
+/// Persists and exposes the reading mode ('ltr', 'rtl', or 'scroll') for a
+/// specific manga. Defaults to 'ltr' on first use. Persisted to
+/// LocalProgressService
 /// so the preference survives app restarts.
 @riverpod
 class ReadingModeNotifier extends _$ReadingModeNotifier {
@@ -29,17 +30,17 @@ class ReadingModeNotifier extends _$ReadingModeNotifier {
         // Provider disposed before load completed — ignore.
       }
     });
-    return 'paged';
+    return 'ltr';
   }
 
-  /// Persists and applies [mode] ('paged' or 'scroll').
+  /// Persists and applies [mode] ('ltr', 'rtl', or 'scroll').
   Future<void> setMode(String mode) async {
-    assert(mode == 'paged' || mode == 'scroll');
+    assert(mode == 'ltr' || mode == 'rtl' || mode == 'scroll');
     state = mode;
     final service = await ref.read(localProgressServiceProvider.future);
     service.saveReadingMode(mangaId, mode);
   }
 
-  /// Toggles between 'paged' and 'scroll'.
-  Future<void> toggle() => setMode(state == 'paged' ? 'scroll' : 'paged');
+  /// Toggles between 'ltr' and 'scroll'.
+  Future<void> toggle() => setMode(state == 'scroll' ? 'ltr' : 'scroll');
 }

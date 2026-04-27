@@ -32,6 +32,8 @@ class ReaderPage extends ConsumerStatefulWidget {
 // ── State ─────────────────────────────────────────────────────────────────────
 
 class _ReaderPageState extends ConsumerState<ReaderPage> {
+  static const _transitionPrevSlot = 0;
+
   // Currently displayed chapter (changes when user navigates chapters).
   late String _currentChapterId;
 
@@ -80,12 +82,19 @@ class _ReaderPageState extends ConsumerState<ReaderPage> {
   // Whether the top/bottom info bars are currently visible.
   bool _barsVisible = false;
 
+  // Tracks the last reading mode seen by build so we can keep the current
+  // logical page stable when switching direction (LTR <-> RTL).
+  String _lastReadingMode = 'ltr';
+
   // ── Lifecycle ──────────────────────────────────────────────────────────────
 
   @override
   void initState() {
     super.initState();
     _currentChapterId = widget.chapterId;
+    if (widget.mangaId != null) {
+      _lastReadingMode = ref.read(readingModeNotifierProvider(widget.mangaId!));
+    }
     _scrollController.addListener(_onScrollChanged);
   }
 
@@ -98,6 +107,29 @@ class _ReaderPageState extends ConsumerState<ReaderPage> {
 
   // ── Chapter loading ────────────────────────────────────────────────────────
 
+  bool get _isRtlMode {
+    if (widget.mangaId == null) return false;
+    return ref.read(readingModeNotifierProvider(widget.mangaId!)) == 'rtl';
+  }
+
+  int _viewIndexForMangaPage(int mangaPage, int pagesLength) {
+    if (_isRtlMode) return pagesLength - mangaPage;
+    return 1 + mangaPage;
+  }
+
+  int _mangaPageForViewIndex(int viewIndex, int pagesLength) {
+    if (_isRtlMode) return pagesLength - viewIndex;
+    return viewIndex - 1;
+  }
+
+  int _nextTransitionSlot(int pagesLength) {
+    return _isRtlMode ? _transitionPrevSlot : pagesLength + 1;
+  }
+
+  int _prevTransitionSlot(int pagesLength) {
+    return _isRtlMode ? pagesLength + 1 : _transitionPrevSlot;
+  }
+
   void _loadChapter(
     String newChapterId, {
     int initialMangaPage = 0,
@@ -105,7 +137,9 @@ class _ReaderPageState extends ConsumerState<ReaderPage> {
   }) {
     _loadGeneration++;
     _pageController.dispose();
-    _pageController = PageController(initialPage: 1 + initialMangaPage);
+    // PageView starts at slot 1 until chapter page count is known.
+    // _buildPageViewContent aligns to the actual initial slot once loaded.
+    _pageController = PageController(initialPage: 1);
     // Reset scroll controller for scroll mode chapter transitions.
     _scrollController.removeListener(_onScrollChanged);
     _scrollController.dispose();
@@ -147,7 +181,8 @@ class _ReaderPageState extends ConsumerState<ReaderPage> {
       final clamped = progress.pageIndex.clamp(0, pages.length - 1);
       if (clamped > 0 && _pageController.hasClients) {
         setState(() => _currentMangaPage = clamped);
-        _pageController.jumpToPage(1 + clamped);
+        _pageController
+            .jumpToPage(_viewIndexForMangaPage(clamped, pages.length));
       }
     }
   }
@@ -178,7 +213,7 @@ class _ReaderPageState extends ConsumerState<ReaderPage> {
   void _onPageChanged(int viewIndex, AtHomeServer server) {
     final dataSaver = ref.read(imageQualityProvider) == 'data-saver';
     final pages = dataSaver ? server.chapter.dataSaver : server.chapter.data;
-    final mangaPage = viewIndex - 1;
+    final mangaPage = _mangaPageForViewIndex(viewIndex, pages.length);
 
     if (mangaPage >= 0 && mangaPage < pages.length) {
       setState(() {
@@ -198,7 +233,9 @@ class _ReaderPageState extends ConsumerState<ReaderPage> {
         _barsVisible = false;
       });
       // User swiped past the last page — chapter is complete.
-      if (viewIndex == pages.length + 1) _markCurrentChapterRead();
+      if (viewIndex == _nextTransitionSlot(pages.length)) {
+        _markCurrentChapterRead();
+      }
     }
   }
 
@@ -369,7 +406,7 @@ class _ReaderPageState extends ConsumerState<ReaderPage> {
             final mangaId = widget.mangaId;
             final mode = mangaId != null
                 ? ref.watch(readingModeNotifierProvider(mangaId))
-                : 'paged';
+                : 'ltr';
             return SafeArea(
               child: Padding(
                 padding: const EdgeInsets.fromLTRB(16, 20, 16, 8),
@@ -382,33 +419,51 @@ class _ReaderPageState extends ConsumerState<ReaderPage> {
                       style: Theme.of(ctx).textTheme.titleMedium,
                     ),
                     const SizedBox(height: 16),
-                    Row(
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
                           'Reading mode',
                           style: Theme.of(ctx).textTheme.bodyMedium,
                         ),
-                        const Spacer(),
-                        SegmentedButton<String>(
-                          segments: const [
-                            ButtonSegment(
-                              value: 'paged',
-                              icon: Icon(Icons.auto_stories, size: 18),
-                              label: Text('Paged'),
+                        const SizedBox(height: 10),
+                        SizedBox(
+                          width: double.infinity,
+                          child: SegmentedButton<String>(
+                            expandedInsets: EdgeInsets.zero,
+                            style: const ButtonStyle(
+                              visualDensity: VisualDensity.compact,
+                              textStyle: WidgetStatePropertyAll(
+                                TextStyle(fontSize: 12),
+                              ),
                             ),
-                            ButtonSegment(
-                              value: 'scroll',
-                              icon: Icon(Icons.view_agenda, size: 18),
-                              label: Text('Scroll'),
-                            ),
-                          ],
-                          selected: {mode},
-                          onSelectionChanged: mangaId != null
-                              ? (s) => ref
-                                  .read(readingModeNotifierProvider(mangaId)
-                                      .notifier)
-                                  .setMode(s.first)
-                              : null,
+                            segments: const [
+                              ButtonSegment(
+                                value: 'ltr',
+                                label:
+                                    Text('L->R', textAlign: TextAlign.center),
+                              ),
+                              ButtonSegment(
+                                value: 'rtl',
+                                label:
+                                    Text('R->L', textAlign: TextAlign.center),
+                              ),
+                              ButtonSegment(
+                                value: 'scroll',
+                                label: Text(
+                                  'Vertical/Scroll',
+                                  textAlign: TextAlign.center,
+                                ),
+                              ),
+                            ],
+                            selected: {mode},
+                            onSelectionChanged: mangaId != null
+                                ? (s) => ref
+                                    .read(readingModeNotifierProvider(mangaId)
+                                        .notifier)
+                                    .setMode(s.first)
+                                : null,
+                          ),
                         ),
                       ],
                     ),
@@ -472,6 +527,7 @@ class _ReaderPageState extends ConsumerState<ReaderPage> {
     int totalPages,
     AsyncValue<List<Chapter>> chaptersAsync,
     Settings settings,
+    bool isRtlMode,
   ) {
     final chapters = chaptersAsync.valueOrNull ?? [];
     final preferredLanguage = settings.preferredLanguage;
@@ -494,21 +550,33 @@ class _ReaderPageState extends ConsumerState<ReaderPage> {
         ? '–'
         : '${_currentMangaPage + 1} / $totalPages';
 
+    final prevButton = TextButton(
+      onPressed: onPrev,
+      child: Text(
+        'Prev',
+        style: TextStyle(
+          color: onPrev != null ? Colors.white : Colors.white38,
+        ),
+      ),
+    );
+
+    final nextButton = TextButton(
+      onPressed: onNext,
+      child: Text(
+        'Next',
+        style: TextStyle(
+          color: onNext != null ? Colors.white : Colors.white38,
+        ),
+      ),
+    );
+
     return Container(
       color: Colors.black87,
       child: SafeArea(
         top: false,
         child: Row(
           children: [
-            TextButton(
-              onPressed: onPrev,
-              child: Text(
-                'Prev',
-                style: TextStyle(
-                  color: onPrev != null ? Colors.white : Colors.white38,
-                ),
-              ),
-            ),
+            isRtlMode ? nextButton : prevButton,
             Expanded(
               child: Center(
                 child: Text(
@@ -517,15 +585,7 @@ class _ReaderPageState extends ConsumerState<ReaderPage> {
                 ),
               ),
             ),
-            TextButton(
-              onPressed: onNext,
-              child: Text(
-                'Next',
-                style: TextStyle(
-                  color: onNext != null ? Colors.white : Colors.white38,
-                ),
-              ),
-            ),
+            isRtlMode ? prevButton : nextButton,
           ],
         ),
       ),
@@ -546,10 +606,11 @@ class _ReaderPageState extends ConsumerState<ReaderPage> {
 
     final settings = ref.watch(settingsNotifierProvider);
 
-    // Read the per-manga reading mode; fall back to 'paged' when no mangaId.
+    // Read the per-manga reading mode; fall back to 'ltr' when no mangaId.
     final readingMode = widget.mangaId != null
         ? ref.watch(readingModeNotifierProvider(widget.mangaId!))
-        : 'paged';
+        : 'ltr';
+    final isRtlMode = readingMode == 'rtl';
     final isScrollMode = readingMode == 'scroll';
 
     // Chapter title for the top bar.
@@ -565,6 +626,23 @@ class _ReaderPageState extends ConsumerState<ReaderPage> {
                 : effectiveServer.chapter.data)
             .length
         : 0;
+
+    // Keep the same logical page when user switches LTR <-> RTL.
+    // Without this remap, the same PageView slot would point at a different
+    // page index after direction flips.
+    final switchedDirection =
+        (_lastReadingMode == 'ltr' && readingMode == 'rtl') ||
+            (_lastReadingMode == 'rtl' && readingMode == 'ltr');
+    if (switchedDirection && !isScrollMode && totalPages > 0) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted || !_pageController.hasClients) return;
+        final target = _viewIndexForMangaPage(_currentMangaPage, totalPages);
+        if (_pageController.page?.round() != target) {
+          _pageController.jumpToPage(target);
+        }
+      });
+    }
+    _lastReadingMode = readingMode;
 
     // Reader content (PageView / ListView / loading / error).
     final Widget readerContent = serverAsync.when(
@@ -679,6 +757,7 @@ class _ReaderPageState extends ConsumerState<ReaderPage> {
                           totalPages,
                           chaptersAsync,
                           settings,
+                          isRtlMode,
                         ),
                       )
                     : const SizedBox.shrink(key: ValueKey('bottomBarEmpty')),
@@ -751,6 +830,12 @@ class _ReaderPageState extends ConsumerState<ReaderPage> {
       _initialPreloadDone = true;
       WidgetsBinding.instance.addPostFrameCallback((_) async {
         if (!mounted) return;
+        // Align initial page slot (important for RTL where page 1 starts on
+        // the far right slot, not index 1).
+        if (_pageController.hasClients) {
+          _pageController.jumpToPage(
+              _viewIndexForMangaPage(_currentMangaPage, pages.length));
+        }
         await _restoreProgress(pages);
         if (mounted) _startPreload(_currentMangaPage, server);
       });
@@ -762,20 +847,20 @@ class _ReaderPageState extends ConsumerState<ReaderPage> {
       itemCount: pages.length + 2, // prevSlot + pages + nextSlot
       onPageChanged: (index) => _onPageChanged(index, server),
       itemBuilder: (context, index) {
-        if (index == 0) {
+        if (index == _prevTransitionSlot(pages.length)) {
           return _buildTransitionSlot(
             isNext: false,
             chaptersAsync: chaptersAsync,
             preferredLanguage: settings.preferredLanguage,
           );
-        } else if (index == pages.length + 1) {
+        } else if (index == _nextTransitionSlot(pages.length)) {
           return _buildTransitionSlot(
             isNext: true,
             chaptersAsync: chaptersAsync,
             preferredLanguage: settings.preferredLanguage,
           );
         } else {
-          final pageIndex = index - 1;
+          final pageIndex = _mangaPageForViewIndex(index, pages.length);
           return ReaderPageImage(
             key: ValueKey('${_currentChapterId}_${pages[pageIndex]}'),
             url: server.pageUrl(pages[pageIndex], dataSaver: dataSaver),
